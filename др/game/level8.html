@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Уровень 8 — Edit Challenge</title>
+
+  <!-- Использует твой общий стиль -->
+  <link rel="stylesheet" href="./style.css"/>
+
+  <style>
+    /* доп стили только для level8 */
+    .center{ display:flex; align-items:center; justify-content:center; min-height: 70vh; text-align:center; }
+    .big{ font-size: clamp(28px, 4vw, 54px); font-weight: 900; letter-spacing: 1px; }
+    .fade-in{ animation: fadeIn 600ms ease-out both; }
+    .pop{ animation: pop 500ms ease-out both; }
+    .choiceGrid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-top:14px; }
+    @media (max-width: 860px){ .choiceGrid{ grid-template-columns: 1fr; } }
+    .tile{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border-radius: 16px;
+      padding: 14px;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .tile:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,0.25); }
+    .tile h3{ margin:0 0 6px; }
+    .tile p{ margin:0; color: var(--muted); }
+    .hidden{ display:none; }
+    .pill{ display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid var(--border);
+      background: rgba(255,255,255,0.04); font-size: 13px; color: var(--muted); }
+    .materials{ display:grid; gap:10px; margin-top:12px; }
+    .fileRow{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+      border:1px solid var(--border); background: rgba(255,255,255,0.03); border-radius: 14px; padding: 10px 12px; }
+    .fileRow code{ color: var(--text); }
+    .row a.btn.secondary { text-decoration:none; }
+    @keyframes fadeIn{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
+    @keyframes pop{ 0%{opacity:0; transform: scale(.96);} 100%{opacity:1; transform: scale(1);} }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+
+      <!-- SCREEN 1: INTRO -->
+      <div id="sIntro" class="center">
+        <div class="fade-in">
+          <div class="pill">SPECIAL LEVEL</div>
+          <div class="big" style="margin-top:10px;">LEVEL 8</div>
+          <div class="muted" style="margin-top:10px;">Edit Challenge</div>
+          <div class="muted" style="margin-top:18px;">Подготовка…</div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: BRIEF -->
+      <div id="sBrief" class="hidden">
+        <h1 style="margin:0 0 6px;">Уровень 8/12 — Edit Challenge</h1>
+        <div class="muted">
+          Тебе будет дано <span class="kbd">60 секунд</span> на мини-эдит.
+          Сначала выбери тему → выбери тайтл → получи материалы.
+        </div>
+
+        <div class="toast" style="margin-top:12px;">
+          Выбери тему ниже.
+        </div>
+
+        <div class="choiceGrid">
+          <div class="tile" data-topic="anime">
+            <h3>Аниме</h3>
+            <p>Bleach / Магическая битва / Бог старшей школы</p>
+          </div>
+          <div class="tile" data-topic="movies">
+            <h3>Фильмы</h3>
+            <p>Пока заглушка (можно добавить позже)</p>
+          </div>
+          <div class="tile" data-topic="tiktok">
+            <h3>TikTok</h3>
+            <p>Пока заглушка (можно добавить позже)</p>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
+          <a class="btn secondary" href="./game.html">← Назад в квест</a>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: PICK TITLE -->
+      <div id="sTitles" class="hidden">
+        <div class="muted"><span class="pill" id="topicLabel">Тема</span></div>
+        <h1 style="margin:10px 0 6px;">Выбор тайтла</h1>
+        <div class="muted" id="topicDesc">Описание</div>
+
+        <div class="materials" id="titleList"></div>
+
+        <div class="row" style="margin-top:14px;">
+          <button class="btn secondary" id="backToTopics">← Назад к темам</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: MATERIALS -->
+      <div id="sMaterials" class="hidden">
+        <div class="muted"><span class="pill" id="pickedLabel">Выбрано</span></div>
+        <h1 style="margin:10px 0 6px;">Материалы</h1>
+        <div class="muted">
+          Открой файлы ниже и сделай эдит (проверку/таймер добавим позже, когда решишь точное задание).
+        </div>
+
+        <div class="toast ok" style="margin-top:12px;">
+          Папки для материалов:
+          <br/>
+          <span class="kbd">game/assets/level8/anime/bleach/</span>
+          <br/>
+          <span class="kbd">game/assets/level8/anime/jjk/</span>
+          <br/>
+          <span class="kbd">game/assets/level8/anime/gohs/</span>
+        </div>
+
+        <div class="materials" id="filesList"></div>
+
+        <div class="row" style="margin-top:14px;">
+          <button class="btn secondary" id="backToTitles">← Назад к выбору</button>
+          <a class="btn secondary" href="./game.html">В квест</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Темы и тайтлы
+    const TOPICS = {
+      anime: {
+        label: "Аниме",
+        desc: "Выбери аниме — получишь материалы (клипы/музыка/текст) для мини-эдита.",
+        titles: [
+          { id: "bleach", name: "Bleach", note: "вайб + стиль" },
+          { id: "jjk", name: "Магическая битва (Jujutsu Kaisen)", note: "экшен + динамика" },
+          { id: "gohs", name: "Бог старшей школы (God of High School)", note: "скорость + файты" }
+        ]
+      },
+      movies: {
+        label: "Фильмы",
+        desc: "Пока заглушка. Если захочешь — добавим фильмы позже.",
+        titles: [
+          { id: "placeholder1", name: "Скоро будет", note: "пока пусто" },
+          { id: "placeholder2", name: "Скоро будет", note: "пока пусто" },
+          { id: "placeholder3", name: "Скоро будет", note: "пока пусто" }
+        ]
+      },
+      tiktok: {
+        label: "TikTok",
+        desc: "Пока заглушка. Если захочешь — добавим тренды позже.",
+        titles: [
+          { id: "trend1", name: "Скоро будет", note: "пока пусто" },
+          { id: "trend2", name: "Скоро будет", note: "пока пусто" },
+          { id: "trend3", name: "Скоро будет", note: "пока пусто" }
+        ]
+      }
+    };
+
+    // Список файлов, которые ты положишь в папки материалов
+    const MATERIALS = {
+      anime: {
+        bleach: ["clip1.mp4", "clip2.mp4", "audio.mp3", "brief.txt"],
+        jjk: ["clip1.mp4", "clip2.mp4", "audio.mp3", "brief.txt"],
+        gohs: ["clip1.mp4", "clip2.mp4", "audio.mp3", "brief.txt"]
+      },
+      movies: {
+        placeholder1: ["brief.txt"],
+        placeholder2: ["brief.txt"],
+        placeholder3: ["brief.txt"]
+      },
+      tiktok: {
+        trend1: ["brief.txt"],
+        trend2: ["brief.txt"],
+        trend3: ["brief.txt"]
+      }
+    };
+
+    const sIntro = document.getElementById("sIntro");
+    const sBrief = document.getElementById("sBrief");
+    const sTitles = document.getElementById("sTitles");
+    const sMaterials = document.getElementById("sMaterials");
+
+    const topicLabel = document.getElementById("topicLabel");
+    const topicDesc = document.getElementById("topicDesc");
+    const titleList = document.getElementById("titleList");
+
+    const pickedLabel = document.getElementById("pickedLabel");
+    const filesList = document.getElementById("filesList");
+
+    let currentTopic = null;
+
+    function show(screen){
+      [sIntro,sBrief,sTitles,sMaterials].forEach(x => x.classList.add("hidden"));
+      screen.classList.remove("hidden");
+    }
+
+    function renderTitles(topicKey){
+      currentTopic = topicKey;
+      const T = TOPICS[topicKey];
+      topicLabel.textContent = "Тема: " + T.label;
+      topicDesc.textContent = T.desc;
+
+      titleList.innerHTML = "";
+      T.titles.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "tile pop";
+        div.innerHTML = "<h3>" + t.name + "</h3><p>" + t.note + "</p>";
+        div.onclick = function(){ renderMaterials(topicKey, t.id, t.name); };
+        titleList.appendChild(div);
+      });
+
+      show(sTitles);
+    }
+
+    function renderMaterials(topicKey, titleId, titleName){
+      pickedLabel.textContent = "Выбрано: " + TOPICS[topicKey].label + " → " + titleName;
+
+      const files = (MATERIALS[topicKey] && MATERIALS[topicKey][titleId]) ? MATERIALS[topicKey][titleId] : [];
+      filesList.innerHTML = "";
+
+      const basePath = "./assets/level8/" + topicKey + "/" + titleId + "/";
+
+      if (files.length === 0) {
+        const p = document.createElement("div");
+        p.className = "toast";
+        p.textContent = "Файлы не указаны. Добавь их в MATERIALS и положи в папку: " + basePath;
+        filesList.appendChild(p);
+      } else {
+        files.forEach(fn => {
+          const row = document.createElement("div");
+          row.className = "fileRow";
+          row.innerHTML =
+            "<div><code>" + fn + "</code></div>" +
+            "<a class='btn secondary' style='text-decoration:none;' href='" + basePath + fn + "' target='_blank' rel='noopener'>Открыть</a>";
+          filesList.appendChild(row);
+        });
+      }
+
+      show(sMaterials);
+    }
+
+    // интро 1.3 секунды
+    setTimeout(function(){ show(sBrief); }, 1300);
+
+    // клики по темам
+    document.querySelectorAll("[data-topic]").forEach(el => {
+      el.addEventListener("click", function(){ renderTitles(el.getAttribute("data-topic")); });
+    });
+
+    document.getElementById("backToTopics").onclick = function(){ show(sBrief); };
+    document.getElementById("backToTitles").onclick = function(){ renderTitles(currentTopic); };
+  </script>
+</body>
+</html>

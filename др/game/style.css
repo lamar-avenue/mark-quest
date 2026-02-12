@@ -1,0 +1,241 @@
+/* =========================
+   Base
+========================= */
+:root{
+  --bg0: #070b14;
+  --bg1: #0b1020;
+  --card: rgba(255,255,255,.05);
+  --card2: rgba(255,255,255,.03);
+  --border: rgba(255,255,255,.12);
+  --border2: rgba(255,255,255,.18);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.65);
+  --muted2: rgba(255,255,255,.45);
+  --accent: rgba(100,180,255,1);
+  --accent2: rgba(100,180,255,.25);
+  --shadow: 0 18px 50px rgba(0,0,0,.45);
+  --r: 18px;
+  --pad: 16px;
+  --gap: 14px;
+  --side: 280px;
+  --max: 1180px;
+  --btn: rgba(255,255,255,.07);
+  --btn2: rgba(0,0,0,.18);
+}
+
+*{ box-sizing: border-box; }
+html, body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 15% 10%, rgba(100,180,255,.10), transparent 60%),
+    radial-gradient(800px 500px at 90% 20%, rgba(255,255,255,.06), transparent 55%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+/* =========================
+   Layout
+========================= */
+.layout{
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 22px 16px 40px;
+  display: grid;
+  grid-template-columns: 1fr var(--side);
+  gap: var(--gap);
+  align-items: start;
+}
+
+@media (max-width: 980px){
+  .layout{
+    grid-template-columns: 1fr;
+  }
+}
+
+.main{
+  min-width: 0;
+}
+
+.side{
+  min-width: 0;
+}
+
+@media (max-width: 980px){
+  .side{
+    order: 2;
+  }
+}
+
+/* =========================
+   Card / Typography
+========================= */
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.03));
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: var(--pad);
+}
+
+h1,h2,h3{
+  margin: 0 0 10px;
+  line-height: 1.05;
+}
+
+h1{
+  font-size: 32px;
+  font-weight: 950;
+  letter-spacing: .2px;
+}
+
+h2{
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.muted{ color: var(--muted); }
+.small{ color: var(--muted2); font-size: 12px; }
+
+/* =========================
+   Progress / Toast
+========================= */
+#progressLine{
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+#toast{
+  margin-top: 10px;
+  color: rgba(255,200,120,.95);
+  font-weight: 900;
+}
+
+/* =========================
+   Game blocks
+========================= */
+#title{
+  font-weight: 950;
+  font-size: 34px;
+  margin: 2px 0 8px;
+}
+
+#question{
+  color: var(--muted);
+  font-weight: 750;
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+#answers{
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Buttons */
+button, .btn{
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--btn);
+  color: var(--text);
+  font-weight: 900;
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform .10s ease, border-color .10s ease, background .10s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button:hover, .btn:hover{
+  transform: translateY(-1px);
+  border-color: var(--border2);
+  background: rgba(255,255,255,.09);
+}
+
+button:active, .btn:active{
+  transform: translateY(0px);
+}
+
+button:disabled{
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Hint / reset row */
+.actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+#hintText{
+  margin-top: 10px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+/* =========================
+   Key panel
+========================= */
+.keyBox{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 2px;
+  font-weight: 900;
+  font-size: 16px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,.18);
+  background: rgba(0,0,0,.18);
+}
+
+/* =========================
+   Inputs / range
+========================= */
+input[type="text"], input[type="file"], select{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  outline: none;
+}
+
+input[type="range"]{
+  width: 100%;
+}
+
+/* =========================
+   Video elements (generic)
+========================= */
+video{
+  background: rgba(0,0,0,.25);
+}
+
+/* =========================
+   BGM panel (если ты добавлял)
+   Сделаем компактным, не на весь экран
+========================= */
+#bgmPanel, .bgmPanel{
+  width: auto !important;
+  max-width: max-content !important;
+}
+
+/* =========================
+   Helpers
+========================= */
+hr{
+  border: none;
+  border-top: 1px solid rgba(255,255,255,.10);
+  margin: 12px 0;
+}
