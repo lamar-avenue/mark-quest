@@ -318,3 +318,15 @@ input[type="range"]::-moz-range-thumb{
   .audioDock, #audioDock{ right: 12px; top: 12px; }
   .audioDock input[type="range"], #audioDock input[type="range"]{ width: 120px; }
 }
+/* Audio dock: more subtle + bottom-right */
+#audioDock, .audioDock{
+  top: auto !important;
+  right: 18px !important;
+  bottom: 18px !important;
+  padding: 8px 10px !important;
+  gap: 8px !important;
+  opacity: .92;
+}
+#audioDock input[type="range"], .audioDock input[type="range"]{
+  width: 140px !important;
+}

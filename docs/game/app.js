@@ -9,6 +9,29 @@
 
 (() => {
   "use strict";
+  // === Premium moving background (cursor parallax) ===
+(() => {
+  const root = document.documentElement;
+
+  function setXY(clientX, clientY) {
+    const x = (clientX / window.innerWidth) * 100;
+    const y = (clientY / window.innerHeight) * 100;
+    root.style.setProperty("--mx", x.toFixed(2) + "%");
+    root.style.setProperty("--my", y.toFixed(2) + "%");
+  }
+
+  // default center
+  setXY(window.innerWidth / 2, window.innerHeight / 2);
+
+  window.addEventListener("mousemove", (e) => setXY(e.clientX, e.clientY), { passive: true });
+
+  // touch support
+  window.addEventListener("touchmove", (e) => {
+    const t = e.touches && e.touches[0];
+    if (t) setXY(t.clientX, t.clientY);
+  }, { passive: true });
+})();
+
 
   // ---------------------------
   // Helpers
