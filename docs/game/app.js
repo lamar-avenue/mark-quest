@@ -9,6 +9,65 @@
 
 (() => {
   "use strict";
+  // ===== Premium UI helpers (safe to paste at top) =====
+(() => {
+  const root = document.documentElement;
+
+  function setXY(clientX, clientY) {
+    const x = (clientX / window.innerWidth) * 100;
+    const y = (clientY / window.innerHeight) * 100;
+    root.style.setProperty("--mx", x.toFixed(2) + "%");
+    root.style.setProperty("--my", y.toFixed(2) + "%");
+  }
+  setXY(window.innerWidth / 2, window.innerHeight / 2);
+
+  window.addEventListener("mousemove", (e) => setXY(e.clientX, e.clientY), { passive: true });
+  window.addEventListener("touchmove", (e) => {
+    const t = e.touches && e.touches[0];
+    if (t) setXY(t.clientX, t.clientY);
+  }, { passive: true });
+
+  // Audio dock (optional). If you already have one – this won't break anything.
+  window.__ensureAudioDock = function(getAudioEl){
+    if (document.querySelector(".audioDock")) return;
+
+    const dock = document.createElement("div");
+    dock.className = "audioDock";
+    dock.innerHTML = `
+      <button type="button" id="audMute" title="Mute">🔇</button>
+      <input id="audVol" type="range" min="0" max="100" value="30" />
+      <div id="audPct" style="font-weight:700;font-size:12px;opacity:.75;min-width:32px;text-align:right;">30%</div>
+    `;
+    document.body.appendChild(dock);
+
+    const vol = dock.querySelector("#audVol");
+    const pct = dock.querySelector("#audPct");
+    const mute = dock.querySelector("#audMute");
+
+    const apply = () => {
+      const a = getAudioEl && getAudioEl();
+      if (!a) return;
+      const v = Number(vol.value) / 100;
+
+      // "loyal" curve: low values are easier to control
+      a.volume = Math.pow(v, 1.8);
+      pct.textContent = `${vol.value}%`;
+      mute.textContent = a.muted ? "🔈" : "🔇";
+    };
+
+    vol.addEventListener("input", apply);
+    mute.addEventListener("click", () => {
+      const a = getAudioEl && getAudioEl();
+      if (!a) return;
+      a.muted = !a.muted;
+      apply();
+    });
+
+    // initial
+    apply();
+  };
+})();
+
   // === Premium moving background (cursor parallax) ===
 (() => {
   const root = document.documentElement;

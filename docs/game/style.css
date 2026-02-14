@@ -1,332 +1,253 @@
-/* =========================================================
-   MARK QUEST — Premium UI (no frameworks)
-   Replace docs/game/style.css fully with this file.
-   ========================================================= */
-
-/* ---------- Reset / base ---------- */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  color: rgba(255,255,255,.92);
-  font: 500 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", Arial, sans-serif;
-  letter-spacing: .2px;
-  background: #060914;
-  overflow-x: hidden;
-}
-
-/* ---------- Background “WOW” ---------- */
-body::before,
-body::after{
-  content:"";
-  position: fixed;
-  inset: -20%;
-  pointer-events: none;
-  z-index: -2;
-}
-body::before{
-  background:
-    radial-gradient(1200px 700px at 12% 18%, rgba(97, 174, 255,.22), transparent 58%),
-    radial-gradient(900px 650px at 82% 22%, rgba(197, 112, 255,.18), transparent 62%),
-    radial-gradient(900px 700px at 50% 88%, rgba(36, 255, 186,.10), transparent 60%),
-    radial-gradient(1100px 850px at 50% 50%, rgba(255,255,255,.05), transparent 60%),
-    linear-gradient(180deg, #070b18 0%, #070a14 30%, #050714 100%);
-  filter: saturate(1.05);
-}
-body::after{
-  background:
-    radial-gradient(600px 600px at 20% 30%, rgba(255,255,255,.05), transparent 65%),
-    radial-gradient(700px 700px at 70% 70%, rgba(255,255,255,.04), transparent 70%);
-  filter: blur(28px);
-  opacity: .9;
-  z-index: -1;
-}
-
-/* Subtle noise */
 :root{
-  --glass: rgba(255,255,255,.06);
-  --glass2: rgba(255,255,255,.08);
+  --mx: 50%;
+  --my: 50%;
+
+  --bg0:#050713;
+  --bg1:#070a18;
+  --card: rgba(255,255,255,.06);
+  --card2: rgba(255,255,255,.08);
   --stroke: rgba(255,255,255,.10);
-  --stroke2: rgba(255,255,255,.14);
-  --textDim: rgba(255,255,255,.72);
-  --textDim2: rgba(255,255,255,.62);
-  --shadow: 0 18px 55px rgba(0,0,0,.55);
-  --shadow2: 0 8px 24px rgba(0,0,0,.45);
-  --radius: 22px;
-  --radius2: 16px;
-  --accent: #78a9ff;
-  --accent2: #b58bff;
-  --good: #38d39f;
-  --bad: #ff5c78;
+
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.70);
+  --faint: rgba(255,255,255,.55);
+
+  --shadow: 0 20px 70px rgba(0,0,0,.55);
+  --shadow2: 0 12px 30px rgba(0,0,0,.35);
+
+  --r: 18px;
+  --r2: 22px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 700px at 50% 30%, #0b1540 0%, transparent 55%),
+              linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%);
+  overflow-x:hidden;
 }
 
-/* ---------- Layout helpers (works even if your HTML is simple) ---------- */
-
-/* Main wrapper (you have #app) */
-#app{
-  width: min(1100px, calc(100% - 32px));
-  margin: 26px auto 80px auto;
-  padding: 0;
-  animation: fadeIn .45s ease-out both;
+.shell{
+  width:min(1100px, calc(100vw - 44px));
+  margin: 36px auto 60px;
 }
 
-@keyframes fadeIn{
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* If your JS prints blocks with .card class */
-.card{
-  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow2);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  overflow: hidden;
+.app{
   position: relative;
 }
 
-.card::before{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  border-radius: inherit;
+/* ---------- background (premium) ---------- */
+
+.bg{
+  position:fixed;
+  inset:0;
   pointer-events:none;
+  z-index:-1;
+}
+.bg__glow{
+  position:absolute;
+  inset:-40px;
   background:
-    radial-gradient(800px 300px at 10% 0%, rgba(120,169,255,.22), transparent 55%),
-    radial-gradient(700px 260px at 90% 0%, rgba(181,139,255,.18), transparent 55%),
-    radial-gradient(900px 400px at 50% 120%, rgba(56,211,159,.10), transparent 55%);
-  opacity: .9;
-  mix-blend-mode: screen;
+    radial-gradient(1200px 800px at var(--mx) var(--my), rgba(110,196,255,.22), transparent 58%),
+    radial-gradient(900px 700px at calc(var(--mx) + 18%) calc(var(--my) - 10%), rgba(190, 120, 255,.18), transparent 60%),
+    radial-gradient(900px 720px at calc(var(--mx) - 18%) calc(var(--my) + 22%), rgba(40, 255, 200,.10), transparent 62%),
+    linear-gradient(180deg, #070a18 0%, #050713 100%);
+  filter: saturate(1.15);
+  transition: background 70ms linear;
 }
-
-/* Page title / headings */
-h1,h2,h3{ margin: 0 0 12px 0; }
-h1{
-  font-size: 34px;
-  line-height: 1.05;
-  letter-spacing: -0.7px;
-}
-h2{
-  font-size: 22px;
-  letter-spacing: -0.3px;
-}
-.small, .muted{
-  color: var(--textDim);
-}
-.muted{ opacity: .92; }
-
-/* ---------- Buttons ---------- */
-button, .btn, a.btn{
-  appearance: none;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.92);
-  border-radius: 14px;
-  padding: 12px 14px;
-  font-weight: 700;
-  letter-spacing: .2px;
-  cursor: pointer;
-  transition: transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease, opacity .14s ease;
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
-  user-select: none;
-}
-button:hover, .btn:hover{
-  background: rgba(255,255,255,.09);
-  border-color: rgba(255,255,255,.20);
-  transform: translateY(-1px);
-}
-button:active, .btn:active{
-  transform: translateY(0);
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
-button:disabled, .btn:disabled{
-  opacity: .5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Primary */
-.btn-primary, button.primary{
-  border-color: rgba(120,169,255,.55);
-  background: linear-gradient(180deg, rgba(120,169,255,.25), rgba(120,169,255,.12));
-}
-.btn-primary:hover, button.primary:hover{
-  background: linear-gradient(180deg, rgba(120,169,255,.30), rgba(120,169,255,.16));
-}
-
-/* Danger / secondary */
-.btn-danger, button.danger{
-  border-color: rgba(255,92,120,.45);
-  background: linear-gradient(180deg, rgba(255,92,120,.20), rgba(255,92,120,.10));
-}
-
-/* ---------- Answer options styling (this fixes your “white long bars”) ---------- */
-/* Covers most cases: buttons inside a .card or after question text */
-.options, .answers, .choices{
-  display: grid;
-  gap: 12px;
-}
-
-/* If options are rendered as buttons (your screenshot shows long white bars) */
-button.option,
-.answers button,
-.choices button,
-#app button[data-answer],
-#app button.choice,
-#app button.answer{
-  width: 100%;
-  text-align: center;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.90);
-  box-shadow: 0 10px 26px rgba(0,0,0,.32);
-  position: relative;
-  overflow: hidden;
-}
-#app button[data-answer]::before,
-#app button.choice::before,
-#app button.answer::before,
-.answers button::before,
-.choices button::before{
-  content:"";
+.bg__vignette{
   position:absolute;
   inset:0;
-  background:
-    radial-gradient(500px 160px at 30% 0%, rgba(120,169,255,.16), transparent 55%),
-    radial-gradient(500px 160px at 70% 0%, rgba(181,139,255,.12), transparent 55%);
-  opacity: .9;
-  pointer-events:none;
+  background: radial-gradient(1200px 800px at 50% 30%, transparent 40%, rgba(0,0,0,.55) 100%);
 }
-#app button[data-answer]:hover,
-#app button.choice:hover,
-#app button.answer:hover,
-.answers button:hover,
-.choices button:hover{
-  border-color: rgba(255,255,255,.22);
-  background: rgba(255,255,255,.09);
+.bg__noise{
+  position:absolute;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+  opacity:.18;
+  mix-blend-mode: overlay;
 }
 
-/* Selected / correct / wrong helpers (if your JS adds classes) */
-.is-correct, .correct{
-  border-color: rgba(56,211,159,.65) !important;
-  background: linear-gradient(180deg, rgba(56,211,159,.20), rgba(56,211,159,.08)) !important;
-}
-.is-wrong, .wrong{
-  border-color: rgba(255,92,120,.65) !important;
-  background: linear-gradient(180deg, rgba(255,92,120,.20), rgba(255,92,120,.08)) !important;
+/* ---------- cards / typography ---------- */
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r2);
+  box-shadow: var(--shadow2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-/* ---------- Key box (bottom card) ---------- */
-.keyBox, #keyBox, .key-box{
-  margin-top: 16px;
-}
-.keyBox .row, #keyBox .row, .key-box .row{
+.header{
+  padding: 18px 18px 10px;
   display:flex;
-  gap:12px;
-  flex-wrap: wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.brand__emoji{
+  font-size:18px;
+}
+.brand__title{
+  font-weight:800;
+  letter-spacing:.2px;
+}
+.brand__sub{
+  margin-top:2px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
-/* Make key text look premium */
-.keyText, #keyText, .key-text{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 17px;
-  letter-spacing: 1.2px;
-  color: rgba(255,255,255,.88);
-  padding: 10px 12px;
+.h1{
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+.p{
+  margin:0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.section{
+  padding: 16px 18px 18px;
+}
+
+.row{
+  display:flex;
+  gap:14px;
+  align-items:stretch;
+}
+.col{
+  flex:1;
+  min-width:0;
+}
+
+.hr{
+  height:1px;
+  background: rgba(255,255,255,.08);
+  margin: 14px 0;
+}
+
+/* ---------- buttons / options ---------- */
+
+.btn{
+  appearance:none;
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+  color: var(--text);
   border-radius: 14px;
-  background: rgba(0,0,0,.18);
-  border: 1px solid rgba(255,255,255,.10);
-  display: inline-block;
+  padding: 12px 14px;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  transition: transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease;
+}
+.btn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.20);
+  box-shadow: 0 16px 40px rgba(0,0,0,.35);
+}
+.btn:active{ transform: translateY(0px) scale(.99); }
+.btn--primary{
+  border-color: rgba(120,190,255,.35);
+  background: linear-gradient(180deg, rgba(90,170,255,.30), rgba(255,255,255,.06));
 }
 
-/* ---------- Audio widget (top-right) ---------- */
-.audioDock, #audioDock{
+.options{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top: 14px;
+}
+.option{
+  width:100%;
+  text-align:center;
+  padding: 14px 14px;
+  border-radius: 16px;
+}
+
+/* ---------- key box ---------- */
+
+.keyBox{
+  padding: 16px 18px;
+}
+.keyTitle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:800;
+  margin:0 0 8px;
+}
+.keyLine{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: .12em;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,.18);
+  background: rgba(0,0,0,.18);
+  display:inline-block;
+  min-width: 340px;
+}
+
+/* ---------- small toast / errors ---------- */
+
+.toast{
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 120, 160, .25);
+  background: rgba(120, 20, 40, .22);
+}
+
+/* ---------- audio dock ---------- */
+
+.audioDock{
   position: fixed;
-  top: 18px;
   right: 18px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  bottom: 18px;
+  z-index: 20;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+
   padding: 10px 12px;
   border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow2);
 }
-.audioDock input[type="range"], #audioDock input[type="range"]{
+
+.audioDock button{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.18);
+  color: var(--text);
+  cursor:pointer;
+}
+
+.audioDock input[type="range"]{
   width: 160px;
+  accent-color: #8cc7ff;
 }
 
-/* Range nice look */
-input[type="range"]{
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.18);
-  outline: none;
-}
-input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(0,0,0,.25);
-  box-shadow: 0 10px 18px rgba(0,0,0,.35);
-}
-input[type="range"]::-moz-range-thumb{
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(0,0,0,.25);
-  box-shadow: 0 10px 18px rgba(0,0,0,.35);
-}
-
-/* ---------- Spacing for your current layout ---------- */
-.section{
-  margin-top: 14px;
-}
-.stack{
-  display: grid;
-  gap: 14px;
-}
-.row{
-  display:flex;
-  gap:12px;
-  flex-wrap: wrap;
-}
-.spacer{ height: 10px; }
-
-/* ---------- Responsive ---------- */
-@media (max-width: 900px){
-  #app{ width: min(980px, calc(100% - 18px)); margin-top: 16px; }
-  h1{ font-size: 28px; }
-  .audioDock, #audioDock{ right: 12px; top: 12px; }
-  .audioDock input[type="range"], #audioDock input[type="range"]{ width: 120px; }
-}
-/* Audio dock: more subtle + bottom-right */
-#audioDock, .audioDock{
-  top: auto !important;
-  right: 18px !important;
-  bottom: 18px !important;
-  padding: 8px 10px !important;
-  gap: 8px !important;
-  opacity: .92;
-}
-#audioDock input[type="range"], .audioDock input[type="range"]{
-  width: 140px !important;
+/* responsive */
+@media (max-width: 860px){
+  .shell{ width: calc(100vw - 26px); margin: 20px auto 50px; }
+  .h1{ font-size: 28px; }
+  .keyLine{ min-width: 260px; }
 }

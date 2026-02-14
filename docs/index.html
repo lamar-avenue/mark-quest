@@ -1,25 +1,33 @@
-<!-- docs/index.html -->
 <!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#0b1020" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Квест для Марка</title>
 
-  <!-- Favicon (не обязателен). Если файла нет — просто убери эту строку -->
-  <!-- <link rel="icon" href="./favicon.ico"> -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="./game/style.css?v=1" />
+  <link rel="stylesheet" href="./game/style.css?v=8" />
 </head>
 
 <body>
   <noscript>Нужен JavaScript, чтобы квест работал.</noscript>
 
-  <div id="app"></div>
+  <!-- moving background layers -->
+  <div class="bg">
+    <div class="bg__noise"></div>
+    <div class="bg__vignette"></div>
+    <div class="bg__glow"></div>
+  </div>
 
-  <!-- IMPORTANT: data.js должен идти ПЕРЕД app.js -->
-  <script src="./game/data.js?v=11"></script>
-  <script src="./game/app.js?v=11"></script>
+  <!-- App mount -->
+  <main class="shell">
+    <div id="app" class="app"></div>
+  </main>
+
+  <!-- IMPORTANT: data.js BEFORE app.js -->
+  <script src="./game/data.js?v=8"></script>
+  <script src="./game/app.js?v=8"></script>
 </body>
 </html>
