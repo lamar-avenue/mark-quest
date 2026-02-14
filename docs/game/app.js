@@ -25,7 +25,8 @@
     document.body.innerHTML = `
       <div style="max-width:900px;margin:40px auto;padding:18px;font-family:system-ui;color:#fff;background:#111827;border-radius:14px">
         <h2 style="margin:0 0 10px 0">Ошибка: не найден QUIZ_DATA</h2>
-        <div style="opacity:.8">Проверь, что в <b>game/data.js</b> есть <code>window.QUIZ_DATA = {...}</code> и что он подключён перед app.js.</div>
+        <div style="opacity:.8">Проверь, что в <b>game/data.js</b> есть <code>window.QUIZ_DATA = window.QUIZ_DATA || {
+...}</code> и что он подключён перед app.js.</div>
       </div>
     `;
     return;
@@ -734,5 +735,9 @@
   // Start
   // ---------------------------
   render();
+  // совместимость со старыми версиями app.js
+window.QUIZ_DATA = window.QUIZ_DATA;
+window.QUIZ_DATA = window.QUIZ_DATA;
+
 
 })();
