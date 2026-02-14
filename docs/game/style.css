@@ -298,4 +298,10 @@ body{
   text-align: right;
   opacity: .85;
   font-variant-numeric: tabular-nums;
+  /* FIX: ensure background never steals clicks */
+.bg, .bg * { pointer-events: none !important; }
+
+/* FIX: ensure app is above all visuals */
+.shell, .app, #app { position: relative; z-index: 5; }
+
 }
