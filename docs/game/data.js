@@ -38,4 +38,6 @@ window.QUIZ_DATA = {
     { title:"Уровень 11/12", question:"Тест вопрос 11", options:["A","B","C"], answerIndex:0, keyChar:"O" },
     { title:"Уровень 12/12", question:"Тест вопрос 12", options:["A","B","C"], answerIndex:1, keyChar:"!" },
   ],
+  console.log("DATA LOADED", !!window.QUIZ_DATA, window.QUIZ_DATA?.title);
+
 };
