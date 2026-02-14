@@ -1,521 +1,320 @@
-/* docs/game/style.css */
+/* =========================================================
+   MARK QUEST — Premium UI (no frameworks)
+   Replace docs/game/style.css fully with this file.
+   ========================================================= */
 
-/* =========================
-   Fonts + Base
-========================= */
+/* ---------- Reset / base ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  color: rgba(255,255,255,.92);
+  font: 500 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", Arial, sans-serif;
+  letter-spacing: .2px;
+  background: #060914;
+  overflow-x: hidden;
+}
+
+/* ---------- Background “WOW” ---------- */
+body::before,
+body::after{
+  content:"";
+  position: fixed;
+  inset: -20%;
+  pointer-events: none;
+  z-index: -2;
+}
+body::before{
+  background:
+    radial-gradient(1200px 700px at 12% 18%, rgba(97, 174, 255,.22), transparent 58%),
+    radial-gradient(900px 650px at 82% 22%, rgba(197, 112, 255,.18), transparent 62%),
+    radial-gradient(900px 700px at 50% 88%, rgba(36, 255, 186,.10), transparent 60%),
+    radial-gradient(1100px 850px at 50% 50%, rgba(255,255,255,.05), transparent 60%),
+    linear-gradient(180deg, #070b18 0%, #070a14 30%, #050714 100%);
+  filter: saturate(1.05);
+}
+body::after{
+  background:
+    radial-gradient(600px 600px at 20% 30%, rgba(255,255,255,.05), transparent 65%),
+    radial-gradient(700px 700px at 70% 70%, rgba(255,255,255,.04), transparent 70%);
+  filter: blur(28px);
+  opacity: .9;
+  z-index: -1;
+}
+
+/* Subtle noise */
 :root{
-  --bg0:#05070f;
-  --bg1:#071229;
-  --card:rgba(20,26,42,.72);
-  --card2:rgba(20,26,42,.52);
-  --stroke:rgba(255,255,255,.10);
-  --stroke2:rgba(255,255,255,.08);
-  --text:#e8ecff;
-  --muted:rgba(232,236,255,.70);
-  --muted2:rgba(232,236,255,.55);
-  --accent:#6aa8ff;
-  --accent2:#b14cff;
-  --good:#3ee08f;
-  --bad:#ff5d6c;
-  --shadow: 0 18px 50px rgba(0,0,0,.55);
+  --glass: rgba(255,255,255,.06);
+  --glass2: rgba(255,255,255,.08);
+  --stroke: rgba(255,255,255,.10);
+  --stroke2: rgba(255,255,255,.14);
+  --textDim: rgba(255,255,255,.72);
+  --textDim2: rgba(255,255,255,.62);
+  --shadow: 0 18px 55px rgba(0,0,0,.55);
+  --shadow2: 0 8px 24px rgba(0,0,0,.45);
   --radius: 22px;
   --radius2: 16px;
-  --blur: 16px;
-  --gap: 16px;
+  --accent: #78a9ff;
+  --accent2: #b58bff;
+  --good: #38d39f;
+  --bad: #ff5c78;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
-  color:var(--text);
-  font: 15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial,"Apple Color Emoji","Segoe UI Emoji";
-  background: radial-gradient(1200px 800px at 18% 10%, rgba(106,168,255,.22), transparent 55%),
-              radial-gradient(900px 600px at 80% 20%, rgba(177,76,255,.20), transparent 60%),
-              radial-gradient(900px 650px at 50% 90%, rgba(62,224,143,.14), transparent 65%),
-              linear-gradient(180deg, var(--bg1), var(--bg0));
-  overflow-x:hidden;
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
-/* subtle animated noise/glow */
-body::before{
-  content:"";
-  position:fixed; inset:-40px;
-  background:
-    radial-gradient(700px 420px at 10% 70%, rgba(106,168,255,.12), transparent 60%),
-    radial-gradient(680px 420px at 90% 60%, rgba(177,76,255,.10), transparent 62%),
-    radial-gradient(700px 500px at 60% 15%, rgba(255,255,255,.05), transparent 60%);
-  filter: blur(30px);
-  opacity:.9;
-  pointer-events:none;
-  animation: floatGlow 16s ease-in-out infinite alternate;
-}
-@keyframes floatGlow{
-  from{ transform: translate3d(0,0,0) scale(1); }
-  to{ transform: translate3d(0,-18px,0) scale(1.03); }
-}
+/* ---------- Layout helpers (works even if your HTML is simple) ---------- */
 
-a{ color:var(--accent); text-decoration:none; }
-a:hover{ text-decoration:underline; }
-
+/* Main wrapper (you have #app) */
 #app{
-  width:min(1320px, calc(100% - 36px));
-  margin: 26px auto 80px;
+  width: min(1100px, calc(100% - 32px));
+  margin: 26px auto 80px auto;
+  padding: 0;
+  animation: fadeIn .45s ease-out both;
 }
 
-/* =========================
-   Layout helpers
-========================= */
-.row{
-  display:flex;
-  gap: var(--gap);
-  align-items:stretch;
-}
-.col{ flex:1; min-width:0; }
-
-.stack{ display:flex; flex-direction:column; gap: var(--gap); }
-
-@media (max-width: 980px){
-  .row{ flex-direction:column; }
+@keyframes fadeIn{
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* =========================
-   Cards
-========================= */
+/* If your JS prints blocks with .card class */
 .card{
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  overflow:hidden;
-  position:relative;
-}
-.card::after{
-  content:"";
-  position:absolute; inset:0;
-  background: radial-gradient(900px 300px at 30% 0%, rgba(106,168,255,.10), transparent 55%),
-              radial-gradient(900px 300px at 80% 10%, rgba(177,76,255,.08), transparent 60%);
-  pointer-events:none;
-  opacity:.9;
-}
-.card > *{ position:relative; z-index:1; }
-
-.cardPad{ padding:22px; }
-.cardPadSm{ padding:16px; }
-
-.hr{
-  height:1px; background: var(--stroke2);
-  margin: 14px 0;
-}
-
-/* =========================
-   Headings + text
-========================= */
-.hTitle{
-  display:flex; align-items:center; gap:10px;
-  font-size: 34px;
-  letter-spacing:.2px;
-  margin:0 0 6px;
-}
-.hTitle .emoji{ filter: drop-shadow(0 6px 18px rgba(106,168,255,.25)); }
-.hSub{
-  margin:0;
-  color:var(--muted);
-  font-size:14px;
-}
-.big{
-  font-size:18px;
-}
-.muted{ color:var(--muted); }
-.muted2{ color:var(--muted2); }
-
-/* =========================
-   Buttons
-========================= */
-.btnRow{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-}
-
-.btn{
-  border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-  padding: 12px 16px;
-  border-radius: 14px;
-  cursor:pointer;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
-  user-select:none;
-  font-weight:650;
-  letter-spacing:.2px;
-}
-.btn:hover{
-  background: rgba(255,255,255,.07);
-  border-color: rgba(255,255,255,.16);
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(0,0,0,.25);
-}
-.btn:active{ transform: translateY(0px) scale(.99); }
-.btn:disabled{
-  opacity:.45;
-  cursor:not-allowed;
-  transform:none;
-  box-shadow:none;
-}
-
-.btnPrimary{
-  border-color: rgba(106,168,255,.35);
-  background: linear-gradient(180deg, rgba(106,168,255,.26), rgba(106,168,255,.12));
-}
-.btnPrimary:hover{
-  background: linear-gradient(180deg, rgba(106,168,255,.32), rgba(106,168,255,.15));
-}
-
-.btnDanger{
-  border-color: rgba(255,93,108,.32);
-  background: linear-gradient(180deg, rgba(255,93,108,.22), rgba(255,93,108,.10));
-}
-.btnDanger:hover{
-  background: linear-gradient(180deg, rgba(255,93,108,.28), rgba(255,93,108,.13));
-}
-
-/* wide answer buttons */
-.answerBtn{
-  width:100%;
-  text-align:center;
-  padding: 14px 16px;
-  border-radius: 16px;
-  font-size: 15px;
-  background: rgba(255,255,255,.035);
-}
-.answerBtn:hover{ background: rgba(255,255,255,.07); }
-
-.answers{
-  display:grid;
-  gap:12px;
-}
-
-/* =========================
-   Inputs
-========================= */
-.input{
-  width:100%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,.16);
-  background: rgba(0,0,0,.15);
-  color: var(--text);
-  outline:none;
-  transition: border-color .12s ease, background .12s ease;
-  font-weight:650;
-  letter-spacing:.15em;
-}
-.input:focus{
-  border-color: rgba(106,168,255,.55);
-  background: rgba(0,0,0,.22);
-}
-
-/* =========================
-   Toasts / Alerts
-========================= */
-.toast{
-  border-radius: 18px;
-  padding: 14px 16px;
-  border:1px solid var(--stroke);
-  background: rgba(255,255,255,.05);
-}
-.toastGood{
-  border-color: rgba(62,224,143,.35);
-  background: linear-gradient(180deg, rgba(62,224,143,.16), rgba(62,224,143,.06));
-}
-.toastBad{
-  border-color: rgba(255,93,108,.38);
-  background: linear-gradient(180deg, rgba(255,93,108,.16), rgba(255,93,108,.06));
-}
-
-/* =========================
-   Top audio widget
-========================= */
-.audioDock{
-  position:fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 50;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--stroke);
-  background: rgba(10,12,20,.55);
+  box-shadow: var(--shadow2);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 14px 34px rgba(0,0,0,.45);
-}
-.audioBtn{
-  width:36px; height:36px;
-  display:grid; place-items:center;
-  border-radius: 12px;
-  border:1px solid var(--stroke);
-  background: rgba(255,255,255,.05);
-  cursor:pointer;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease;
-}
-.audioBtn:hover{
-  background: rgba(255,255,255,.08);
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.16);
-}
-.audioBtn:active{ transform: translateY(0px) scale(.99); }
-.audioRange{
-  width: 170px;
-}
-.audioPct{
-  min-width: 34px;
-  text-align:right;
-  color: var(--muted);
-  font-weight:700;
-  font-size: 12px;
-}
-@media (max-width: 520px){
-  .audioRange{ width: 120px; }
-  .audioDock{ right:10px; top:10px; }
+  overflow: hidden;
+  position: relative;
 }
 
-/* range styling */
+.card::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: inherit;
+  pointer-events:none;
+  background:
+    radial-gradient(800px 300px at 10% 0%, rgba(120,169,255,.22), transparent 55%),
+    radial-gradient(700px 260px at 90% 0%, rgba(181,139,255,.18), transparent 55%),
+    radial-gradient(900px 400px at 50% 120%, rgba(56,211,159,.10), transparent 55%);
+  opacity: .9;
+  mix-blend-mode: screen;
+}
+
+/* Page title / headings */
+h1,h2,h3{ margin: 0 0 12px 0; }
+h1{
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.7px;
+}
+h2{
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+.small, .muted{
+  color: var(--textDim);
+}
+.muted{ opacity: .92; }
+
+/* ---------- Buttons ---------- */
+button, .btn, a.btn{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  cursor: pointer;
+  transition: transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease, opacity .14s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+  user-select: none;
+}
+button:hover, .btn:hover{
+  background: rgba(255,255,255,.09);
+  border-color: rgba(255,255,255,.20);
+  transform: translateY(-1px);
+}
+button:active, .btn:active{
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+button:disabled, .btn:disabled{
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary */
+.btn-primary, button.primary{
+  border-color: rgba(120,169,255,.55);
+  background: linear-gradient(180deg, rgba(120,169,255,.25), rgba(120,169,255,.12));
+}
+.btn-primary:hover, button.primary:hover{
+  background: linear-gradient(180deg, rgba(120,169,255,.30), rgba(120,169,255,.16));
+}
+
+/* Danger / secondary */
+.btn-danger, button.danger{
+  border-color: rgba(255,92,120,.45);
+  background: linear-gradient(180deg, rgba(255,92,120,.20), rgba(255,92,120,.10));
+}
+
+/* ---------- Answer options styling (this fixes your “white long bars”) ---------- */
+/* Covers most cases: buttons inside a .card or after question text */
+.options, .answers, .choices{
+  display: grid;
+  gap: 12px;
+}
+
+/* If options are rendered as buttons (your screenshot shows long white bars) */
+button.option,
+.answers button,
+.choices button,
+#app button[data-answer],
+#app button.choice,
+#app button.answer{
+  width: 100%;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+  box-shadow: 0 10px 26px rgba(0,0,0,.32);
+  position: relative;
+  overflow: hidden;
+}
+#app button[data-answer]::before,
+#app button.choice::before,
+#app button.answer::before,
+.answers button::before,
+.choices button::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(500px 160px at 30% 0%, rgba(120,169,255,.16), transparent 55%),
+    radial-gradient(500px 160px at 70% 0%, rgba(181,139,255,.12), transparent 55%);
+  opacity: .9;
+  pointer-events:none;
+}
+#app button[data-answer]:hover,
+#app button.choice:hover,
+#app button.answer:hover,
+.answers button:hover,
+.choices button:hover{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.09);
+}
+
+/* Selected / correct / wrong helpers (if your JS adds classes) */
+.is-correct, .correct{
+  border-color: rgba(56,211,159,.65) !important;
+  background: linear-gradient(180deg, rgba(56,211,159,.20), rgba(56,211,159,.08)) !important;
+}
+.is-wrong, .wrong{
+  border-color: rgba(255,92,120,.65) !important;
+  background: linear-gradient(180deg, rgba(255,92,120,.20), rgba(255,92,120,.08)) !important;
+}
+
+/* ---------- Key box (bottom card) ---------- */
+.keyBox, #keyBox, .key-box{
+  margin-top: 16px;
+}
+.keyBox .row, #keyBox .row, .key-box .row{
+  display:flex;
+  gap:12px;
+  flex-wrap: wrap;
+}
+
+/* Make key text look premium */
+.keyText, #keyText, .key-text{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 17px;
+  letter-spacing: 1.2px;
+  color: rgba(255,255,255,.88);
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.10);
+  display: inline-block;
+}
+
+/* ---------- Audio widget (top-right) ---------- */
+.audioDock, #audioDock{
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow2);
+}
+.audioDock input[type="range"], #audioDock input[type="range"]{
+  width: 160px;
+}
+
+/* Range nice look */
 input[type="range"]{
-  -webkit-appearance:none;
-  appearance:none;
+  -webkit-appearance: none;
+  appearance: none;
   height: 6px;
-  background: rgba(255,255,255,.12);
   border-radius: 999px;
-  outline:none;
+  background: rgba(255,255,255,.18);
+  outline: none;
 }
 input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width: 16px; height:16px;
-  border-radius:999px;
-  background: linear-gradient(180deg, rgba(106,168,255,1), rgba(177,76,255,1));
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0,0,0,.25);
   box-shadow: 0 10px 18px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.22);
 }
 input[type="range"]::-moz-range-thumb{
-  width: 16px; height:16px;
-  border-radius:999px;
-  background: linear-gradient(180deg, rgba(106,168,255,1), rgba(177,76,255,1));
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0,0,0,.25);
   box-shadow: 0 10px 18px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.22);
 }
 
-/* =========================
-   Premium level header area
-========================= */
-.levelHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
+/* ---------- Spacing for your current layout ---------- */
+.section{
+  margin-top: 14px;
 }
-.levelLeft{ min-width:0; }
-.levelMeta{
-  color: var(--muted);
-  font-weight:750;
-  letter-spacing:.2px;
-  margin-bottom: 6px;
-}
-.levelTitle{
-  font-size: 34px;
-  margin: 0 0 6px;
-  letter-spacing:.2px;
-}
-.levelDesc{
-  margin: 0;
-  color: var(--muted);
-}
-
-/* =========================
-   Key panel
-========================= */
-.keyBox{
-  min-width: 320px;
-  max-width: 420px;
-}
-@media (max-width: 980px){
-  .keyBox{ min-width:0; max-width:none; }
-}
-
-.keyTitle{
-  display:flex; align-items:center; gap:10px;
-  font-size: 24px;
-  margin:0 0 6px;
-}
-.keyHint{ color:var(--muted); margin:0 0 10px; }
-
-.keyInput{
-  font-size: 16px;
-  letter-spacing:.20em;
-}
-
-/* =========================
-   Edit challenge: clip grid cards
-========================= */
-.clipGrid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.stack{
+  display: grid;
   gap: 14px;
 }
-@media (max-width: 980px){
-  .clipGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 560px){
-  .clipGrid{ grid-template-columns: 1fr; }
-}
-
-.clipCard{
-  border-radius: 18px;
-  border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.03);
-  overflow:hidden;
-  cursor:pointer;
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
-  position:relative;
-  min-height: 170px;
-}
-.clipCard:hover{
-  transform: translateY(-2px);
-  border-color: rgba(106,168,255,.22);
-  background: rgba(255,255,255,.05);
-}
-.clipThumb{
-  height: 110px;
-  width:100%;
-  object-fit: cover;
-  display:block;
-  background: rgba(255,255,255,.04);
-}
-.clipBody{
-  padding: 12px 12px 14px;
-}
-.clipTitle{
-  font-weight: 850;
-  margin:0 0 4px;
-  font-size: 14px;
-}
-.clipMeta{
-  margin:0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* selection circle (top-right) */
-.pickDot{
-  position:absolute;
-  top: 10px;
-  right: 10px;
-  width: 18px; height:18px;
-  border-radius:999px;
-  border: 2px solid rgba(255,255,255,.45);
-  background: rgba(0,0,0,.22);
-  display:grid;
-  place-items:center;
-  transition: border-color .18s ease, transform .18s ease, background .18s ease;
-}
-.pickDot::after{
-  content:"";
-  width: 10px; height:10px;
-  border-radius:999px;
-  background: linear-gradient(180deg, rgba(106,168,255,1), rgba(177,76,255,1));
-  transform: scale(0);
-  opacity: 0;
-  transition: transform .18s ease, opacity .18s ease;
-}
-.clipCard.selected .pickDot{
-  border-color: rgba(106,168,255,.95);
-  background: rgba(0,0,0,.15);
-  transform: scale(1.02);
-}
-.clipCard.selected .pickDot::after{
-  transform: scale(1);
-  opacity: 1;
-}
-
-/* big preview player wrapper */
-.previewWrap{
-  border-radius: 18px;
-  border: 1px solid var(--stroke);
-  overflow:hidden;
-  background: rgba(0,0,0,.25);
-}
-.previewTop{
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--stroke2);
-  color: var(--muted);
-  font-weight: 750;
-}
-.previewVideo{
-  width:100%;
-  height: 380px;
-  background: #000;
-  display:block;
-}
-@media (max-width: 980px){
-  .previewVideo{ height: 300px; }
-}
-@media (max-width: 560px){
-  .previewVideo{ height: 220px; }
-}
-
-/* =========================
-   Tabs / editor-like sections
-========================= */
-.tabs{
+.row{
   display:flex;
-  gap:8px;
-  padding: 10px;
-  border-radius: 18px;
-  border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.03);
-  overflow:auto;
+  gap:12px;
+  flex-wrap: wrap;
 }
-.tab{
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: rgba(255,255,255,.03);
-  color: var(--muted);
-  font-weight: 800;
-  cursor:pointer;
-  white-space:nowrap;
-  transition: background .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
-}
-.tab:hover{
-  color: var(--text);
-  background: rgba(255,255,255,.06);
-  transform: translateY(-1px);
-}
-.tab.active{
-  color: var(--text);
-  border-color: rgba(106,168,255,.26);
-  background: linear-gradient(180deg, rgba(106,168,255,.18), rgba(106,168,255,.06));
-}
-
-/* =========================
-   Small animations
-========================= */
-.fadeIn{
-  animation: fadeIn .22s ease both;
-}
-@keyframes fadeIn{
-  from{ opacity:0; transform: translateY(6px); }
-  to{ opacity:1; transform: translateY(0); }
-}
-
-/* =========================
-   Utility
-========================= */
-.center{ display:flex; align-items:center; justify-content:center; }
-.hidden{ display:none !important; }
 .spacer{ height: 10px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px){
+  #app{ width: min(980px, calc(100% - 18px)); margin-top: 16px; }
+  h1{ font-size: 28px; }
+  .audioDock, #audioDock{ right: 12px; top: 12px; }
+  .audioDock input[type="range"], #audioDock input[type="range"]{ width: 120px; }
+}
