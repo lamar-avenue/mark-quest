@@ -1,37 +1,25 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Квест для Марка</title>
+
+  <!-- Anti-cache: меняй число когда хочешь принудительно обновить сайт -->
+  <link rel="stylesheet" href="game/style.css?v=7" />
+
   <style>
-    body { font-family: system-ui, Arial; background:#0b0f19; color:#e9eefc; margin:0; }
-    .wrap { max-width: 860px; margin: 0 auto; padding: 32px 16px; }
-    .card { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
-      border-radius: 16px; padding: 20px; }
-    a.btn { display:inline-block; padding:12px 16px; border-radius:12px; background:#3b82f6; color:white;
-      text-decoration:none; font-weight:600; margin-top:12px; }
-    .muted { color: rgba(233,238,252,0.75); }
-    ul { margin: 10px 0 0 18px; }
+    /* минимальный фон на случай если css не подгрузится */
+    html,body{margin:0;height:100%;background:#070a12;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1 style="margin:0 0 8px;">🎁 Квест для Марка</h1>
-      <p class="muted" style="margin:0 0 12px;">
-        12 уровней. За каждый — 1 символ. Собери ключ и откроешь финал.
-      </p>
-      <ul class="muted">
-        <li>Ничего устанавливать не нужно.</li>
-        <li>Можно закрывать и возвращаться — прогресс сохранится.</li>
-        <li>Подсказка доступна после первой ошибки на уровне.</li>
-      </ul>
-      <a class="btn" href="game/game.html">Начать</a>
-      <div class="muted" style="margin-top:12px;">
-        Если не открывается — правой кнопкой → “Открыть с помощью” → Chrome/Edge.
-      </div>
-    </div>
-  </div>
+  <!-- ТУТ рисуется весь интерфейс -->
+  <div id="app"></div>
+
+  <!-- data.js должен быть ПЕРЕД app.js -->
+  <script src="game/data.js?v=7"></script>
+  <script src="game/app.js?v=7"></script>
 </body>
 </html>
