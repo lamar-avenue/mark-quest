@@ -1,605 +1,738 @@
-/* =========================================================
-   app.js (full rewrite) — Mark Quest
-   Works on GitHub Pages, no libs, premium-ready structure
-   ========================================================= */
+/* docs/game/app.js
+   Stable build: quiz 12 levels + key + bgm + level 8 clip picker
+*/
 
 (() => {
   "use strict";
 
-  /* =========================
-     SETTINGS
-     ========================= */
-  const TOTAL_LEVELS = 12;
-
-  // Включи для подарка: скрывает подсказки/сброс и "лишние" админ-элементы
-  const MARK_MODE = true;
-
-  // Уровень, на котором фон-музыка должна остановиться (edit challenge)
-  const EDIT_LEVEL_NUM = 8;
-
-  // Тихая громкость по умолчанию (30%)
-  const DEFAULT_BGM_VOLUME = 0.30;
-
-  // Плавность затухания музыки
-  const FADE_MS = 650;
-
-  // localStorage ключи
-  const LS_KEY = "markquest_state_v2";
-
-  /* =========================
-     SAFE HELPERS
-     ========================= */
+  // ---------------------------
+  // Helpers
+  // ---------------------------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const LS_KEY = "markQuest_v7_state";
+  const DEFAULT_VOL = 0.30;
 
-  function safeJSONParse(s, fallback) {
-    try { return JSON.parse(s); } catch { return fallback; }
+  // ---------------------------
+  // Data (from data.js)
+  // ---------------------------
+  const DATA = window.QUIZ_DATA || null;
+
+  // Fallback (если data.js не подхватился — покажем понятную ошибку)
+  if (!DATA) {
+    document.body.innerHTML = `
+      <div style="max-width:900px;margin:40px auto;padding:18px;font-family:system-ui;color:#fff;background:#111827;border-radius:14px">
+        <h2 style="margin:0 0 10px 0">Ошибка: не найден QUIZ_DATA</h2>
+        <div style="opacity:.8">Проверь, что в <b>game/data.js</b> есть <code>window.QUIZ_DATA = {...}</code> и что он подключён перед app.js.</div>
+      </div>
+    `;
+    return;
   }
 
-  function isNumber(x) {
-    return typeof x === "number" && Number.isFinite(x);
-  }
+  const TOTAL_LEVELS = DATA.levels.length;
 
-  /* =========================
-     DATA (from data.js)
-     Expect one of:
-       window.QUIZ_LEVELS = [...]
-       window.LEVELS = [...]
-       window.MARK_LEVELS = [...]
-     Each level:
-       {
-         title: "Уровень 1/12",
-         question: "....",
-         answers: ["a","b","c"],
-         correct: 1, // index
-         hint?: "..."
-         keyChar?: "M"
-         type?: "quiz" | "edit"
-       }
-     ========================= */
-  function loadLevels() {
-    const levels =
-      window.QUIZ_LEVELS ||
-      window.LEVELS ||
-      window.MARK_LEVELS ||
-      null;
-
-    if (Array.isArray(levels) && levels.length) {
-      return levels;
-    }
-
-    // Fallback demo (чтобы сайт не падал)
-    const demo = [];
-    for (let i = 1; i <= TOTAL_LEVELS; i++) {
-      demo.push({
-        type: i === EDIT_LEVEL_NUM ? "edit" : "quiz",
-        title: `Уровень ${i}/${TOTAL_LEVELS}`,
-        question: i === EDIT_LEVEL_NUM
-          ? "Edit Challenge: выбери 3 клипа и собери одно видео."
-          : `Демо-вопрос ${i}: выбери правильный вариант.`,
-        answers: i === EDIT_LEVEL_NUM ? [] : ["Вариант A", "Вариант B", "Вариант C"],
-        correct: 1,
-        hint: "Демо-подсказка.",
-        keyChar: "X"
-      });
-    }
-    return demo;
-  }
-
-  const LEVELS = loadLevels();
-
-  /* =========================
-     STATE
-     ========================= */
-  const state = {
-    levelIndex: 0,              // 0..TOTAL_LEVELS-1
-    key: [],                    // array of chars
-    mistakes: {},               // { [levelIndex]: count }
-    completed: false,
-    // for edit challenge minimal selections
-    edit: {
-      selectedIds: []           // your ids from data if you use
-    },
-    bgm: {
-      volume: DEFAULT_BGM_VOLUME,
-      muted: false,
-      trackIndex: 0
-    }
-  };
+  // ---------------------------
+  // State
+  // ---------------------------
+  const state = loadState();
 
   function loadState() {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
-
-    const saved = safeJSONParse(raw, null);
-    if (!saved) return;
-
-    if (isNumber(saved.levelIndex)) state.levelIndex = clamp(saved.levelIndex, 0, TOTAL_LEVELS - 1);
-    if (Array.isArray(saved.key)) state.key = saved.key.slice(0, TOTAL_LEVELS);
-    if (saved.mistakes && typeof saved.mistakes === "object") state.mistakes = saved.mistakes;
-    if (typeof saved.completed === "boolean") state.completed = saved.completed;
-
-    if (saved.edit && typeof saved.edit === "object") {
-      state.edit.selectedIds = Array.isArray(saved.edit.selectedIds) ? saved.edit.selectedIds.slice(0, 3) : [];
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return freshState();
+      const s = JSON.parse(raw);
+      if (!s || typeof s !== "object") return freshState();
+      // минимальная валидация
+      s.screen ??= "intro";
+      s.levelIndex ??= 0;
+      s.key ??= "";
+      s.wrongCounts ??= {};
+      s.bgm ??= { vol: DEFAULT_VOL, muted: false };
+      s.level8 ??= { picked: [], activeId: null, done: false };
+      return s;
+    } catch {
+      return freshState();
     }
+  }
 
-    if (saved.bgm && typeof saved.bgm === "object") {
-      if (isNumber(saved.bgm.volume)) state.bgm.volume = clamp(saved.bgm.volume, 0, 1);
-      if (typeof saved.bgm.muted === "boolean") state.bgm.muted = saved.bgm.muted;
-      if (isNumber(saved.bgm.trackIndex)) state.bgm.trackIndex = clamp(saved.bgm.trackIndex, 0, 999);
-    }
+  function freshState() {
+    return {
+      screen: "intro",     // intro | quiz | done
+      levelIndex: 0,       // 0..TOTAL_LEVELS-1
+      key: "",
+      wrongCounts: {},
+      bgm: { vol: DEFAULT_VOL, muted: false },
+      level8: { picked: [], activeId: null, done: false },
+    };
   }
 
   function saveState() {
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      levelIndex: state.levelIndex,
-      key: state.key,
-      mistakes: state.mistakes,
-      completed: state.completed,
-      edit: state.edit,
-      bgm: state.bgm
-    }));
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
   }
 
-  function resetProgress() {
-    localStorage.removeItem(LS_KEY);
-    location.reload();
+  // ---------------------------
+  // UI Mount
+  // ---------------------------
+  const root = $("#app") || document.body;
+
+  function setMain(html) {
+    root.innerHTML = html;
   }
 
-  /* =========================
-     ROOT + UI HOOKS
-     ========================= */
-  const root = $("#app") || $("#root") || document.body;
-
-  // Optional containers (if exist in your HTML)
-  const main = $("#main") || root;
-  const keyBox = $("#keyBox") || $("#keyPanel") || null;
-  const toastBox = $("#toast") || null;
-
-  /* =========================
-     TOAST
-     ========================= */
-  function toast(msg, type = "info") {
-    if (!toastBox) {
-      // fallback
-      console.log(`[${type}]`, msg);
-      return;
-    }
-    toastBox.textContent = msg;
-    toastBox.classList.remove("ok", "err", "info");
-    toastBox.classList.add(type);
-    toastBox.style.opacity = "1";
-    setTimeout(() => { toastBox.style.opacity = "0"; }, 2400);
-  }
-
-  /* =========================
-     BACKGROUND MUSIC
-     ========================= */
-  let bgmAudio = null;
-  let bgmTracks = [];
-
-  function initBgm() {
-    // You can define tracks in data.js:
-    // window.BGM_TRACKS = ["game/assets/music/track1.mp3", "game/assets/music/track2.mp3"];
-    bgmTracks = Array.isArray(window.BGM_TRACKS) ? window.BGM_TRACKS : [
-      "game/assets/music/track1.mp3",
-      "game/assets/music/track2.mp3",
-    ];
-
-    bgmAudio = new Audio();
-    bgmAudio.loop = false; // мы сами включим следующий трек
-    bgmAudio.preload = "auto";
-
-    applyBgmVolume();
-
-    bgmAudio.addEventListener("ended", () => {
-      state.bgm.trackIndex = (state.bgm.trackIndex + 1) % bgmTracks.length;
-      playBgm(true);
-    });
-  }
-
-  function applyBgmVolume() {
-    if (!bgmAudio) return;
-    bgmAudio.muted = !!state.bgm.muted;
-    bgmAudio.volume = clamp(state.bgm.volume, 0, 1);
-  }
-
-  async function fadeBgmTo(targetVol, ms = FADE_MS) {
-    if (!bgmAudio) return;
-    targetVol = clamp(targetVol, 0, 1);
-
-    const start = bgmAudio.volume;
-    const t0 = performance.now();
-
-    while (true) {
-      const t = performance.now() - t0;
-      const p = clamp(t / ms, 0, 1);
-      const v = start + (targetVol - start) * p;
-      bgmAudio.volume = v;
-      if (p >= 1) break;
-      await sleep(16);
-    }
-  }
-
-  async function playBgm(force = false) {
-    if (!bgmAudio || !bgmTracks.length) return;
-
-    const shouldStop = (getShownLevelNum() === EDIT_LEVEL_NUM);
-    if (shouldStop && !force) return;
-
-    const src = bgmTracks[state.bgm.trackIndex % bgmTracks.length];
-    if (bgmAudio.src !== src) bgmAudio.src = src;
-
-    applyBgmVolume();
-
-    try {
-      // Важно: браузеры требуют user gesture. У нас это будет после клика "Начать"/ответ.
-      await bgmAudio.play();
-    } catch (e) {
-      // Не спамим
-      console.warn("BGM play blocked:", e);
-    }
-  }
-
-  async function stopBgmSmooth() {
-    if (!bgmAudio) return;
-    try {
-      await fadeBgmTo(0, FADE_MS);
-      bgmAudio.pause();
-      bgmAudio.currentTime = 0;
-      // возвращаем громкость назад (на будущее)
-      bgmAudio.volume = clamp(state.bgm.volume, 0, 1);
-    } catch {}
-  }
-
-  async function resumeBgmSmooth() {
-    if (!bgmAudio) return;
-    try {
-      // стартуем с 0, потом мягко поднимаем
-      const target = clamp(state.bgm.volume, 0, 1);
-      bgmAudio.volume = 0;
-      await playBgm(true);
-      await fadeBgmTo(target, FADE_MS);
-    } catch {}
-  }
-
-  function renderAudioWidget() {
-    // маленький виджет сверху справа: mute + slider + %
-    let w = $("#bgmWidget");
-    if (!w) {
-      w = document.createElement("div");
-      w.id = "bgmWidget";
-      w.style.position = "fixed";
-      w.style.top = "14px";
-      w.style.right = "14px";
-      w.style.zIndex = "9999";
-      w.style.display = "flex";
-      w.style.alignItems = "center";
-      w.style.gap = "10px";
-      w.style.padding = "10px 12px";
-      w.style.borderRadius = "14px";
-      w.style.background = "rgba(20,24,35,.65)";
-      w.style.border = "1px solid rgba(255,255,255,.10)";
-      w.style.backdropFilter = "blur(10px)";
-      w.style.boxShadow = "0 12px 40px rgba(0,0,0,.45)";
-      document.body.appendChild(w);
+  // ---------------------------
+  // Toast (mini)
+  // ---------------------------
+  function toast(msg, kind = "info") {
+    const id = "toastBox";
+    let box = $("#" + id);
+    if (!box) {
+      box = document.createElement("div");
+      box.id = id;
+      box.style.cssText = `
+        position:fixed;left:50%;top:18px;transform:translateX(-50%);
+        z-index:99999;max-width:900px;width:calc(100% - 24px);
+        pointer-events:none;
+      `;
+      document.body.appendChild(box);
     }
 
-    w.innerHTML = `
-      <button id="bgmMuteBtn" title="Mute" style="width:40px;height:34px;border-radius:12px;">
-        ${state.bgm.muted ? "🔇" : "🔊"}
-      </button>
-      <input id="bgmSlider" type="range" min="0" max="100" value="${Math.round(state.bgm.volume * 100)}" style="width:160px;">
-      <div id="bgmPct" style="min-width:34px;opacity:.85;font-weight:600;">${Math.round(state.bgm.volume * 100)}%</div>
+    const el = document.createElement("div");
+    el.style.cssText = `
+      pointer-events:auto;
+      background:${kind === "err" ? "rgba(185,28,28,.35)" : "rgba(30,41,59,.55)"};
+      border:1px solid rgba(148,163,184,.25);
+      color:#fff;border-radius:14px;
+      padding:10px 12px;margin:8px auto;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      font: 14px/1.35 system-ui;
+      opacity:0; transform: translateY(-8px);
+      transition: .25s ease;
     `;
-
-    $("#bgmMuteBtn").addEventListener("click", () => {
-      state.bgm.muted = !state.bgm.muted;
-      applyBgmVolume();
-      saveState();
-      renderAudioWidget();
+    el.textContent = msg;
+    box.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.opacity = "1";
+      el.style.transform = "translateY(0)";
     });
 
-    $("#bgmSlider").addEventListener("input", (e) => {
-      state.bgm.volume = clamp(parseInt(e.target.value, 10) / 100, 0, 1);
-      state.bgm.muted = false;
-      applyBgmVolume();
-      $("#bgmPct").textContent = `${Math.round(state.bgm.volume * 100)}%`;
-      saveState();
-    });
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(-8px)";
+      setTimeout(() => el.remove(), 250);
+    }, 2600);
   }
 
-  /* =========================
-     KEY PANEL
-     ========================= */
-  function getShownLevelNum() {
-    // levelIndex is 0-based, shown is 1..TOTAL_LEVELS
-    return clamp(state.levelIndex + 1, 1, TOTAL_LEVELS);
+  // ---------------------------
+  // Background Music
+  // ---------------------------
+  const bgm = {
+    audio: new Audio(),
+    fading: false,
+    targetVol: DEFAULT_VOL,
+    raf: null,
+  };
+
+  bgm.audio.preload = "auto";
+  bgm.audio.loop = true;
+
+  function pickTrackUrl() {
+    const tracks = DATA.musicTracks || [];
+    if (!tracks.length) return null;
+    // Можно сделать случайный трек:
+    const i = Math.floor(Math.random() * tracks.length);
+    return tracks[i];
   }
 
-  function renderKeyPanel() {
-    if (!keyBox) return;
+  function applyBgmUIToAudio() {
+    const vol = clamp(state.bgm.vol ?? DEFAULT_VOL, 0, 1);
+    bgm.targetVol = vol;
+    bgm.audio.volume = state.bgm.muted ? 0 : vol;
+    bgm.audio.muted = false; // мы управляем громкостью сами
+  }
 
-    const filled = state.key.join("");
-    const missing = Math.max(0, TOTAL_LEVELS - state.key.length);
-    const mask = filled + "_".repeat(missing);
+  async function ensureBgmPlaying() {
+    const url = pickTrackUrl();
+    if (!url) return;
 
-    keyBox.innerHTML = `
-      <div style="font-weight:800;font-size:18px;margin-bottom:6px;">🔑 Ключ</div>
-      <div style="opacity:.85;margin-bottom:8px;">Собери ${TOTAL_LEVELS} символов:</div>
-      <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-                  padding:10px 12px;border:1px dashed rgba(255,255,255,.18);
-                  border-radius:12px;letter-spacing:1px;">
-        ${mask}
+    if (bgm.audio.src !== new URL(url, location.href).toString()) {
+      bgm.audio.src = url;
+    }
+
+    applyBgmUIToAudio();
+
+    try {
+      // автозапуск в браузерах может блокироваться — тогда включится после первого клика пользователя
+      await bgm.audio.play();
+    } catch {
+      // тихо игнорируем
+    }
+  }
+
+  function fadeBgm(to, ms = 450) {
+    cancelAnimationFrame(bgm.raf);
+    const from = bgm.audio.volume;
+    const start = performance.now();
+    bgm.fading = true;
+
+    const tick = (t) => {
+      const k = clamp((t - start) / ms, 0, 1);
+      const v = from + (to - from) * k;
+      bgm.audio.volume = v;
+      if (k < 1) bgm.raf = requestAnimationFrame(tick);
+      else bgm.fading = false;
+    };
+    bgm.raf = requestAnimationFrame(tick);
+  }
+
+  function stopBgmSmooth() {
+    // плавно в 0
+    fadeBgm(0, 500);
+  }
+
+  function resumeBgmSmooth() {
+    if (state.bgm.muted) return;
+    fadeBgm(clamp(state.bgm.vol ?? DEFAULT_VOL, 0, 1), 600);
+  }
+
+  // ---------------------------
+  // Render: Layout blocks
+  // ---------------------------
+  function render() {
+    // БГМ: в интро/вопросах включаем, в level8 выключаем
+    if (state.screen === "intro" || state.screen === "quiz" || state.screen === "done") {
+      // если сейчас НЕ edit уровень — музыка должна быть
+      const lvl = DATA.levels[state.levelIndex];
+      const isEdit = lvl && lvl.type === "edit";
+      if (!isEdit) ensureBgmPlaying();
+    }
+
+    if (state.screen === "intro") return renderIntro();
+    if (state.screen === "done") return renderDone();
+    return renderQuiz();
+  }
+
+  function topBarHTML() {
+    // компактный контрол громкости в правом верхнем углу
+    const volPct = Math.round((state.bgm.vol ?? DEFAULT_VOL) * 100);
+    const muted = !!state.bgm.muted;
+
+    return `
+      <div class="topbar">
+        <div class="volbox" title="Громкость фоновой музыки">
+          <button class="iconbtn" id="btnMute" aria-label="mute">${muted ? "🔇" : "🔊"}</button>
+          <input id="volSlider" type="range" min="0" max="100" value="${volPct}" />
+          <div class="volpct">${volPct}%</div>
+        </div>
       </div>
     `;
   }
 
-  /* =========================
-     RENDER (Start / Level / Done)
-     ========================= */
-  function setMain(html) {
-    main.innerHTML = html;
+  function keyCardHTML() {
+    const keyLen = DATA.keyLength || TOTAL_LEVELS;
+    const shown = (state.key || "").padEnd(keyLen, "_");
+    return `
+      <div class="card keycard">
+        <h2 style="margin:0 0 8px 0">🔑 Ключ</h2>
+        <div class="muted">Собери ${keyLen} символов:</div>
+        <div class="keyline">${escapeHtml(shown)}</div>
+      </div>
+    `;
   }
 
-  function renderStartScreen() {
-    // Запускаем музыку после первого клика (gesture)
+  function wireTopBar() {
+    const muteBtn = $("#btnMute");
+    const slider = $("#volSlider");
+    if (muteBtn) {
+      muteBtn.addEventListener("click", () => {
+        state.bgm.muted = !state.bgm.muted;
+        saveState();
+        applyBgmUIToAudio();
+        // если включили звук — мягко вернём
+        if (!state.bgm.muted) resumeBgmSmooth();
+        render(); // обновить иконку
+      });
+    }
+    if (slider) {
+      slider.addEventListener("input", () => {
+        const v = clamp(parseInt(slider.value, 10) / 100, 0, 1);
+        state.bgm.vol = v;
+        saveState();
+        // без “потухания на секунду”: просто меняем громкость без fade
+        if (!state.bgm.muted) bgm.audio.volume = v;
+        const pct = $(".volpct");
+        if (pct) pct.textContent = `${Math.round(v * 100)}%`;
+      });
+    }
+  }
+
+  // ---------------------------
+  // Intro / Done
+  // ---------------------------
+  function renderIntro() {
     setMain(`
-      <div class="card fadeInUp" style="max-width:980px;margin:40px auto;padding:22px;">
-        <div style="font-size:28px;font-weight:900;display:flex;gap:10px;align-items:center;">
-          🎁 Квест для Марка
-        </div>
-        <div style="opacity:.9;margin-top:8px;line-height:1.5;">
-          12 уровней. За каждый — 1 символ ключа. Собери ключ и откроешь финал.
+      ${topBarHTML()}
+      <div class="page">
+        <div class="card hero">
+          <h1 style="margin:0 0 6px 0">🎁 ${escapeHtml(DATA.title || "Квест")}</h1>
+          <div class="muted">${escapeHtml(DATA.subtitle || "12 уровней. За каждый — 1 символ. Собери ключ и откроешь финал.")}</div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn primary" id="btnStart">Начать</button>
+            <button class="btn" id="btnReset">Сбросить прогресс</button>
+          </div>
+
+          <div class="muted" style="margin-top:10px;opacity:.75">
+            Если музыка не играет — кликни один раз по странице (браузеры иногда блокируют автозапуск).
+          </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-          <button id="btnStart" class="btn" style="padding:12px 16px;font-weight:800;">Начать</button>
-          ${MARK_MODE ? "" : `<button id="btnReset" class="btn" style="padding:12px 16px;">Сбросить прогресс</button>`}
-        </div>
-
-        <div style="opacity:.75;margin-top:12px;">
-          Если звук не стартует — нажми “Начать”, это требуется браузером.
-        </div>
+        ${keyCardHTML()}
       </div>
     `);
 
-    $("#btnStart").addEventListener("click", async () => {
-      await resumeBgmSmooth();
+    wireTopBar();
+
+    $("#btnStart")?.addEventListener("click", () => {
+      state.screen = "quiz";
+      saveState();
       render();
     });
 
-    if (!MARK_MODE) {
-      const r = $("#btnReset");
-      if (r) r.addEventListener("click", resetProgress);
-    }
-  }
-
-  function renderDoneScreen() {
-    // прогресс строго 12/12
-    setMain(`
-      <div class="card fadeInUp" style="max-width:1100px;margin:30px auto;padding:22px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:34px;height:34px;border-radius:10px;background:rgba(61,255,204,.18);
-                      display:grid;place-items:center;border:1px solid rgba(61,255,204,.30);">✅</div>
-          <div style="font-size:28px;font-weight:900;">Готово</div>
-        </div>
-
-        <div style="margin-top:8px;opacity:.9;">
-          Ключ: <b>${state.key.join("")}</b>
-        </div>
-
-        <div style="margin-top:14px;">
-          <button id="btnFinal" class="btn" style="width:100%;padding:14px 16px;font-weight:900;">Открыть финал</button>
-        </div>
-
-        ${MARK_MODE ? "" : `
-          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
-            <button id="btnReset2" class="btn" style="padding:12px 16px;">Сбросить прогресс</button>
-          </div>
-        `}
-      </div>
-    `);
-
-    $("#btnFinal").addEventListener("click", () => {
-      // TODO: сюда потом поставишь свою ссылку/страницу
-      // например: location.href = "end.html";
-      // или: window.open("https://...", "_blank");
-      alert("Финал можно подключить позже: end.html или ссылка. Сейчас всё готово 🙂");
+    $("#btnReset")?.addEventListener("click", () => {
+      const s = freshState();
+      Object.assign(state, s);
+      saveState();
+      toast("Прогресс сброшен");
+      render();
     });
-
-    if (!MARK_MODE) {
-      const r = $("#btnReset2");
-      if (r) r.addEventListener("click", resetProgress);
-    }
   }
 
-  function renderQuizLevel(level, shownLevelNum) {
-    const answers = Array.isArray(level.answers) ? level.answers : [];
-    const mistakeCount = state.mistakes[state.levelIndex] || 0;
-
-    const showHint = !MARK_MODE && mistakeCount > 0 && !!level.hint;
-
+  function renderDone() {
+    // фикс “13/12”: прогресс считаем как TOTAL_LEVELS
     setMain(`
-      <div class="card fadeInUp" style="max-width:1100px;margin:22px auto;padding:22px;">
-        <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-          <div>
-            <div style="opacity:.85;font-weight:700;">Прогресс: ${shownLevelNum}/${TOTAL_LEVELS}</div>
-            <div style="font-size:34px;font-weight:950;margin-top:2px;">${level.title || `Уровень ${shownLevelNum}/${TOTAL_LEVELS}`}</div>
-            <div style="opacity:.92;margin-top:8px;font-size:16px;line-height:1.45;">
-              ${level.question || ""}
-            </div>
+      ${topBarHTML()}
+      <div class="page">
+        <div class="card hero">
+          <h1 style="margin:0 0 6px 0">✅ Готово</h1>
+          <div class="muted">Ключ собран:</div>
+          <div class="keyline" style="margin-top:8px">${escapeHtml(state.key || "")}</div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn primary" id="btnFinal">Открыть финал</button>
+            <button class="btn" id="btnToStart">На старт</button>
           </div>
         </div>
 
-        <div style="margin-top:16px;display:grid;gap:10px;">
-          ${answers.map((a, idx) => `
-            <button class="btn ansBtn hoverLift" data-idx="${idx}" style="text-align:center;padding:14px 16px;font-weight:800;">
-              ${a}
-            </button>
-          `).join("")}
-        </div>
-
-        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-          ${showHint ? `<button id="btnHint" class="btn" style="padding:12px 16px;">Подсказка</button>` : ""}
-          ${MARK_MODE ? "" : `<button id="btnReset" class="btn" style="padding:12px 16px;">Сбросить прогресс</button>`}
-        </div>
-
-        ${showHint ? `<div id="hintBox" class="card" style="margin-top:12px;padding:12px 14px;display:none;"></div>` : ""}
+        ${keyCardHTML()}
       </div>
     `);
 
-    $$(".ansBtn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        // разблокируем музыку по пользовательскому клику
-        await playBgm();
+    wireTopBar();
 
-        const idx = parseInt(btn.dataset.idx, 10);
-        const correct = isNumber(level.correct) ? level.correct : 0;
-
-        if (idx === correct) {
-          // add key char
-          const ch = (level.keyChar || "").toString().slice(0, 1) || "X";
-          if (state.key.length < TOTAL_LEVELS) state.key.push(ch);
-
-          // next level
-          if (state.levelIndex >= TOTAL_LEVELS - 1) {
-            state.completed = true;
-          } else {
-            state.levelIndex++;
-          }
-          saveState();
-          render();
-        } else {
-          state.mistakes[state.levelIndex] = (state.mistakes[state.levelIndex] || 0) + 1;
-          saveState();
-          toast("Неправильно 🙂 попробуй ещё раз", "err");
-          // не глушим музыку и не делаем паузу — чтобы не было "потухло на секунду"
-          renderKeyPanel();
-          // Показ подсказки появится только если MARK_MODE=false
-          if (!MARK_MODE) render();
-        }
-      });
+    $("#btnFinal")?.addEventListener("click", () => {
+      // Тут потом можно сделать ссылку/переход
+      toast("Финал можно оформить отдельной страницей 🙂");
     });
 
-    if (!MARK_MODE) {
-      const r = $("#btnReset");
-      if (r) r.addEventListener("click", resetProgress);
+    $("#btnToStart")?.addEventListener("click", () => {
+      state.screen = "intro";
+      saveState();
+      render();
+    });
+  }
+
+  // ---------------------------
+  // Quiz renderer
+  // ---------------------------
+  function renderQuiz() {
+    const level = DATA.levels[state.levelIndex];
+    const shownLevelNum = state.levelIndex + 1;
+
+    if (!level) {
+      state.screen = "done";
+      saveState();
+      return render();
     }
 
-    if (showHint) {
-      $("#btnHint").addEventListener("click", () => {
+    // Level 8: edit challenge
+    if (level.type === "edit") {
+      return renderEditLevel(level, shownLevelNum);
+    }
+
+    // Обычный уровень
+    const showHintBtn = false; // ты хотел убрать кнопки "Подсказка" — оставляю выключенным
+
+    setMain(`
+      ${topBarHTML()}
+      <div class="page wide">
+        <div class="card maincard">
+          <div class="muted">Уровень ${shownLevelNum}/${TOTAL_LEVELS}</div>
+          <h1 style="margin:6px 0 10px 0">${escapeHtml(level.title || `Уровень ${shownLevelNum}`)}</h1>
+          <div class="qtext">${escapeHtml(level.question || "")}</div>
+
+          <div class="answers" id="answers"></div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            ${showHintBtn ? `<button class="btn" id="btnHint">Подсказка</button>` : ""}
+            <button class="btn" id="btnReset">Сбросить прогресс</button>
+          </div>
+
+          <div class="hintbox" id="hintBox" style="display:none"></div>
+        </div>
+
+        ${keyCardHTML()}
+      </div>
+    `);
+
+    wireTopBar();
+
+    $("#btnReset")?.addEventListener("click", () => {
+      Object.assign(state, freshState());
+      saveState();
+      toast("Прогресс сброшен");
+      render();
+    });
+
+    if (showHintBtn) {
+      $("#btnHint")?.addEventListener("click", () => {
         const hb = $("#hintBox");
+        if (!hb) return;
         hb.style.display = "block";
-        hb.textContent = level.hint;
+        hb.textContent = level.hint || "Подсказки нет 🙂";
       });
     }
+
+    const answers = $("#answers");
+    const opts = Array.isArray(level.options) ? level.options : [];
+    answers.innerHTML = opts
+      .map((t, i) => `<button class="ans" data-i="${i}">${escapeHtml(t)}</button>`)
+      .join("");
+
+    $$(".ans", answers).forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = parseInt(btn.getAttribute("data-i"), 10);
+        const ok = isCorrect(level, i);
+
+        if (!ok) {
+          state.wrongCounts[state.levelIndex] = (state.wrongCounts[state.levelIndex] || 0) + 1;
+          saveState();
+          toast("Неправильно 🙂 попробуй ещё", "err");
+          // без затухания музыки — ничего не трогаем
+          return;
+        }
+
+        onLevelComplete(level);
+      });
+    });
   }
 
+  function isCorrect(level, pickedIndex) {
+    // варианты: answerIndex или answerText
+    if (typeof level.answerIndex === "number") {
+      return pickedIndex === level.answerIndex;
+    }
+    if (typeof level.answerText === "string") {
+      const opts = level.options || [];
+      return (opts[pickedIndex] || "").trim().toLowerCase() === level.answerText.trim().toLowerCase();
+    }
+    return false;
+  }
+
+  function onLevelComplete(level) {
+    // добавляем символ ключа
+    const ch = (level.keyChar ?? "").toString();
+    if (ch && state.key.length < (DATA.keyLength || TOTAL_LEVELS)) {
+      state.key += ch;
+    }
+
+    // следующий уровень
+    if (state.levelIndex >= TOTAL_LEVELS - 1) {
+      state.screen = "done";
+    } else {
+      state.levelIndex += 1;
+    }
+
+    saveState();
+    toast("Верно ✅");
+    render();
+  }
+
+  // ---------------------------
+  // Level 8: Edit Challenge (clip picker)
+  // ---------------------------
   function renderEditLevel(level, shownLevelNum) {
-    // На edit уровне — стопаем фон-музыку
+    // ВАЖНО: только тут плавно гасим фон-музыку
     stopBgmSmooth();
 
-    // Минимальная версия: выбор 3 клипов + кнопка "Дальше"
-    // Твои карточки/редактор могут быть уже в level8.html — тогда просто делай переход на него.
-    setMain(`
-      <div class="card fadeInUp" style="max-width:1200px;margin:22px auto;padding:22px;">
-        <div style="opacity:.85;font-weight:700;">Прогресс: ${shownLevelNum}/${TOTAL_LEVELS}</div>
-        <div style="font-size:34px;font-weight:950;margin-top:2px;">${level.title || `Уровень ${shownLevelNum}/${TOTAL_LEVELS} — Edit Challenge`}</div>
-        <div style="opacity:.92;margin-top:8px;line-height:1.45;">
-          ${level.question || "Собери одно видео из 3 клипов. (Редактор у тебя уже есть — можно подключить сюда.)"}
-        </div>
+    const clips = (DATA.editClips || []).slice(); // ожидаем [{id,title,group,src,thumb}, ...]
 
-        <div class="card" style="margin-top:14px;padding:14px;">
-          <div style="font-weight:800;margin-bottom:8px;">⚠️ Здесь должен быть твой редактор (уровень 8).</div>
-          <div style="opacity:.85;">
-            Сейчас этот `app.js` оставил место. Если хочешь — я подгоню под твой текущий редактор 8 уровня,
-            чтобы он работал прямо тут и потом кнопка “Дальше”.
+    // Активный клип в большом плеере
+    const activeId = state.level8.activeId || (clips[0]?.id ?? null);
+    if (!state.level8.activeId && activeId) state.level8.activeId = activeId;
+
+    const picked = state.level8.picked || [];
+    const pickedSet = new Set(picked);
+
+    const activeClip = clips.find((c) => c.id === state.level8.activeId) || clips[0];
+
+    setMain(`
+      ${topBarHTML()}
+      <div class="page wide">
+        <div class="card maincard">
+          <div class="muted">Уровень ${shownLevelNum}/${TOTAL_LEVELS}</div>
+          <h1 style="margin:6px 0 10px 0">${escapeHtml(level.title || "Edit Challenge")}</h1>
+          <div class="qtext">${escapeHtml(level.question || "Выбери 3 клипа. Клик по карточке — откроет в большом плеере. Кружок справа сверху — выбор.")}</div>
+
+          <div class="playerWrap">
+            <div class="muted" style="margin-bottom:8px">Просмотр: <b>${escapeHtml(activeClip?.title || "")}</b></div>
+            <video id="bigPlayer" controls playsinline preload="metadata"
+              style="width:100%;border-radius:14px;background:#000"
+              src="${escapeAttr(activeClip?.src || "")}">
+            </video>
+          </div>
+
+          <div class="muted" style="margin-top:10px">Выбрано: ${picked.length}/3</div>
+
+          <button class="btn primary" id="btnEditNext" ${picked.length === 3 ? "" : "disabled"} style="margin-top:10px">
+            Дальше (к редактору)
+          </button>
+
+          <div class="grid" id="clipGrid" style="margin-top:14px">
+            ${clips.map((c) => clipCardHTML(c, pickedSet.has(c.id), c.id === activeId)).join("")}
+          </div>
+
+          <div class="muted" style="margin-top:12px;opacity:.75">
+            Сейчас это этап выбора. Следующим шагом встроим редактор/экспорт так, чтобы работало в Chrome/Opera стабильно.
           </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-          <button id="btnBackToQuiz" class="btn" style="padding:12px 16px;">← Назад</button>
-          <button id="btnNextFromEdit" class="btn" style="padding:12px 16px;font-weight:900;">Дальше →</button>
-        </div>
+        ${keyCardHTML()}
       </div>
     `);
 
-    $("#btnBackToQuiz").addEventListener("click", async () => {
-      // возвращаемся (чисто навигация)
-      state.levelIndex = clamp(state.levelIndex - 1, 0, TOTAL_LEVELS - 1);
-      saveState();
-      await resumeBgmSmooth();
-      render();
-    });
+    wireTopBar();
 
-    $("#btnNextFromEdit").addEventListener("click", async () => {
-      // Тут ты позже поставишь проверку "экспорт готов" и т.п.
-      // Пока просто идём дальше и возвращаем музыку
-      if (state.levelIndex >= TOTAL_LEVELS - 1) {
-        state.completed = true;
-      } else {
-        state.levelIndex++;
+    // клики по карточкам
+    $$("#clipGrid .clipCard").forEach((card) => {
+      const id = card.getAttribute("data-id");
+
+      // открыть в плеере
+      card.addEventListener("click", (e) => {
+        // если клик по кружку — не надо менять активный (мы обработаем отдельно)
+        if ((e.target && e.target.closest && e.target.closest(".pickDot")) || (e.target && e.target.classList && e.target.classList.contains("pickDot"))) {
+          return;
+        }
+        state.level8.activeId = id;
+        saveState();
+        render(); // перерисуем, чтобы обновить плеер/рамку
+      });
+
+      // выбор
+      const dot = card.querySelector(".pickDot");
+      if (dot) {
+        dot.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const pickedArr = state.level8.picked || [];
+          const has = pickedArr.includes(id);
+
+          if (has) {
+            state.level8.picked = pickedArr.filter((x) => x !== id);
+          } else {
+            if (pickedArr.length >= 3) {
+              toast("Можно выбрать только 3 клипа", "err");
+              return;
+            }
+            state.level8.picked = pickedArr.concat([id]);
+          }
+
+          saveState();
+          render();
+        });
       }
-      saveState();
-      await resumeBgmSmooth();
-      render();
+    });
+
+    $("#btnEditNext")?.addEventListener("click", () => {
+      if ((state.level8.picked || []).length !== 3) return;
+
+      // Тут можно открыть твой существующий редактор или перейти на встроенный экран редактора
+      // Пока сделаем просто: засчитываем уровень как пройденный (и включаем музыку обратно)
+      resumeBgmSmooth();
+
+      onLevelComplete(level);
     });
   }
 
-  function render() {
-    // всегда корректный прогресс
-    const shownLevelNum = getShownLevelNum();
-
-    renderAudioWidget();
-    renderKeyPanel();
-
-    if (state.completed || state.key.length >= TOTAL_LEVELS) {
-      state.completed = true;
-      state.levelIndex = TOTAL_LEVELS - 1; // зафиксируем
-      saveState();
-      renderDoneScreen();
-      return;
-    }
-
-    const level = LEVELS[state.levelIndex] || {};
-    const type = level.type || (shownLevelNum === EDIT_LEVEL_NUM ? "edit" : "quiz");
-
-    // На обычных уровнях музыка может играть
-    if (shownLevelNum !== EDIT_LEVEL_NUM) {
-      // не форсим — просто пробуем
-      playBgm();
-    }
-
-    if (type === "edit") {
-      renderEditLevel(level, shownLevelNum);
-    } else {
-      renderQuizLevel(level, shownLevelNum);
-    }
+  function clipCardHTML(c, picked, active) {
+    const thumb = c.thumb || "";
+    return `
+      <div class="clipCard ${active ? "active" : ""}" data-id="${escapeAttr(c.id)}">
+        <div class="thumb" style="background-image:url('${escapeAttr(thumb)}')">
+          <div class="pickDot ${picked ? "on" : ""}" title="Выбрать клип"></div>
+        </div>
+        <div class="clipMeta">
+          <div class="clipTitle">${escapeHtml(c.title || "CLIP")}</div>
+          <div class="clipSub">${escapeHtml(c.group || "")}</div>
+        </div>
+      </div>
+    `;
   }
 
-  /* =========================
-     INIT
-     ========================= */
-  function boot() {
-    loadState();
-    initBgm();
-    renderAudioWidget();
-    renderKeyPanel();
-
-    // Если прогресс есть — сразу в игру, иначе стартовый экран
-    const hasProgress = state.key.length > 0 || state.levelIndex > 0;
-    if (hasProgress) {
-      render();
-    } else {
-      renderStartScreen();
-    }
+  // ---------------------------
+  // Escaping
+  // ---------------------------
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
+  function escapeAttr(s) {
+    return escapeHtml(s).replaceAll("`", "");
+  }
+
+  // ---------------------------
+  // Global click to allow audio autoplay
+  // ---------------------------
+  document.addEventListener("click", () => {
+    // первая попытка play после взаимодействия
+    if (bgm.audio.paused) ensureBgmPlaying();
+  }, { once: true });
+
+  // ---------------------------
+  // Inject minimal CSS for the pieces we used (если style.css ещё не содержит)
+  // ---------------------------
+  injectBaseCSS();
+
+  function injectBaseCSS() {
+    const css = `
+      .topbar{position:fixed;right:18px;top:14px;z-index:9990;display:flex;gap:10px}
+      .volbox{
+        display:flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:16px;
+        background:rgba(15,23,42,.55);
+        border:1px solid rgba(148,163,184,.18);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      }
+      .iconbtn{border:0;background:rgba(255,255,255,.06);color:#fff;border-radius:12px;padding:8px 10px;cursor:pointer}
+      #volSlider{width:180px}
+      .volpct{min-width:42px;text-align:right;opacity:.85}
+
+      .page{max-width:1100px;margin:90px auto 40px auto;padding:0 14px;display:grid;grid-template-columns: 1fr 360px;gap:16px}
+      .page.wide{grid-template-columns: 1fr 380px}
+      @media (max-width: 980px){.page,.page.wide{grid-template-columns:1fr} .topbar{right:10px}}
+      .card{
+        background: rgba(15,23,42,.45);
+        border: 1px solid rgba(148,163,184,.18);
+        border-radius: 20px;
+        padding: 18px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 18px 40px rgba(0,0,0,.35);
+      }
+      .hero{padding:22px}
+      .muted{opacity:.78}
+      .keycard .keyline{
+        margin-top:10px;
+        padding:10px 12px;
+        border-radius:14px;
+        border:1px dashed rgba(148,163,184,.35);
+        letter-spacing:2px;
+        font-weight:800;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      }
+      .btn{
+        border:1px solid rgba(148,163,184,.22);
+        background: rgba(255,255,255,.06);
+        color:#fff;
+        border-radius: 14px;
+        padding: 10px 14px;
+        cursor:pointer;
+      }
+      .btn:disabled{opacity:.45;cursor:not-allowed}
+      .btn.primary{
+        background: rgba(59,130,246,.22);
+        border-color: rgba(59,130,246,.35);
+      }
+      .qtext{margin-top:6px;opacity:.9;line-height:1.4}
+      .answers{margin-top:14px;display:grid;gap:10px}
+      .ans{
+        text-align:center;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border:1px solid rgba(148,163,184,.18);
+        background: rgba(255,255,255,.05);
+        color:#fff;
+        cursor:pointer;
+        transition:.15s ease;
+      }
+      .ans:hover{transform: translateY(-1px); background: rgba(255,255,255,.07)}
+      .hintbox{
+        margin-top:12px;
+        padding:10px 12px;
+        border-radius:14px;
+        background: rgba(16,185,129,.10);
+        border:1px solid rgba(16,185,129,.22);
+      }
+
+      .playerWrap{margin-top:14px}
+      .grid{
+        display:grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap:12px;
+      }
+      @media (max-width: 900px){.grid{grid-template-columns: repeat(2, minmax(0, 1fr));}}
+      @media (max-width: 560px){.grid{grid-template-columns: 1fr;}}
+      .clipCard{
+        border-radius:18px;
+        overflow:hidden;
+        border:1px solid rgba(148,163,184,.18);
+        background: rgba(255,255,255,.04);
+        cursor:pointer;
+        transition:.18s ease;
+        position:relative;
+      }
+      .clipCard:hover{transform: translateY(-2px)}
+      .clipCard.active{outline: 2px solid rgba(59,130,246,.55)}
+      .thumb{
+        height:130px;
+        background-size:cover;
+        background-position:center;
+        background-color: rgba(255,255,255,.06);
+        position:relative;
+      }
+      .pickDot{
+        width:18px;height:18px;border-radius:999px;
+        border:2px solid rgba(226,232,240,.9);
+        position:absolute;right:10px;top:10px;
+        background: rgba(0,0,0,.25);
+        box-shadow: 0 6px 14px rgba(0,0,0,.35);
+        transition:.18s ease;
+      }
+      .pickDot.on{
+        background: rgba(59,130,246,.95);
+        border-color: rgba(191,219,254,1);
+      }
+      .clipMeta{padding:12px}
+      .clipTitle{font-weight:900}
+      .clipSub{opacity:.75;font-size:12px;margin-top:2px}
+    `.trim();
+
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  // ---------------------------
   // Start
-  boot();
+  // ---------------------------
+  render();
 
 })();
