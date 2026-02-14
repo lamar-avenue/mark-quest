@@ -8,26 +8,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="./game/style.css?v=8" />
+  <link rel="stylesheet" href="./game/style.css?v=2000" />
 </head>
 
 <body>
   <noscript>Нужен JavaScript, чтобы квест работал.</noscript>
 
-  <!-- moving background layers -->
-  <div class="bg">
+  <!-- Background layers -->
+  <div class="bg" aria-hidden="true">
     <div class="bg__noise"></div>
     <div class="bg__vignette"></div>
     <div class="bg__glow"></div>
   </div>
 
-  <!-- App mount -->
   <main class="shell">
-    <div id="app" class="app"></div>
+    <div id="app"></div>
   </main>
 
   <!-- IMPORTANT: data.js BEFORE app.js -->
-  <script src="./game/data.js?v=999"></script>
-  <script src="./game/app.js?v=999"></script>
+  <script src="./game/data.js?v=2000"></script>
+  <script src="./game/app.js?v=2000"></script>
 </body>
 </html>
