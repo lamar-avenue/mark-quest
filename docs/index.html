@@ -1,16 +1,24 @@
+<!-- docs/index.html -->
 <!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mark Quest</title>
+  <meta name="theme-color" content="#0b1020" />
+  <title>Квест для Марка</title>
+
+  <!-- Favicon (не обязателен). Если файла нет — просто убери эту строку -->
+  <!-- <link rel="icon" href="./favicon.ico"> -->
+
   <link rel="stylesheet" href="./game/style.css?v=1" />
 </head>
 
 <body>
+  <noscript>Нужен JavaScript, чтобы квест работал.</noscript>
+
   <div id="app"></div>
 
-  <!-- ВАЖНО: data.js ПЕРЕД app.js -->
+  <!-- IMPORTANT: data.js должен идти ПЕРЕД app.js -->
   <script src="./game/data.js?v=1"></script>
   <script src="./game/app.js?v=1"></script>
 </body>
