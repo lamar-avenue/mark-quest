@@ -1421,5 +1421,25 @@
     await tryStartBgm();
     ensureBgmOnUserGestureOnce();
   })();
+// === Cursor reactive background (WOW) ===
+(() => {
+  const root = document.documentElement;
+
+  // стартовые значения
+  root.style.setProperty("--mx", "50%");
+  root.style.setProperty("--my", "45%");
+
+  let raf = 0;
+  window.addEventListener("mousemove", (e) => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      root.style.setProperty("--mx", x.toFixed(2) + "%");
+      root.style.setProperty("--my", y.toFixed(2) + "%");
+    });
+  }, { passive: true });
+})();
 
 })();

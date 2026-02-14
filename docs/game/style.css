@@ -251,3 +251,51 @@ body{
   .h1{ font-size: 28px; }
   .keyLine{ min-width: 260px; }
 }
+/* === WOW background (reactive gradient) === */
+:root{
+  --mx: 50%;
+  --my: 45%;
+  --bgA: #070b18;
+  --bgB: #081a22;
+  --glow1: rgba(120, 90, 255, .22);
+  --glow2: rgba(0, 220, 255, .16);
+  --glow3: rgba(40, 255, 170, .10);
+}
+
+body{
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 600px at var(--mx) var(--my), var(--glow1), transparent 60%),
+    radial-gradient(800px 520px at calc(var(--mx) + 18%) calc(var(--my) + 10%), var(--glow2), transparent 62%),
+    radial-gradient(900px 700px at calc(var(--mx) - 22%) calc(var(--my) + 18%), var(--glow3), transparent 65%),
+    linear-gradient(180deg, var(--bgA), var(--bgB));
+  transition: background-position .15s ease;
+}
+/* === Audio widget nicer === */
+.audioWidget{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(18, 22, 35, .55);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 55px rgba(0,0,0,.35);
+}
+
+.audioWidget input[type="range"]{
+  width: 160px;
+  accent-color: rgba(120, 90, 255, .95);
+}
+
+.audioWidget .pct{
+  width: 42px;
+  text-align: right;
+  opacity: .85;
+  font-variant-numeric: tabular-nums;
+}
