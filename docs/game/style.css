@@ -870,3 +870,30 @@ function bindMagnet() {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* --- Video level helpers --- */
+.vWrap{position:relative;border-radius:14px;overflow:hidden;background:#000}
+.v{display:block;width:100%;height:auto}
+.vStart{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;
+  border:0;border-radius:14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6));
+  color:#fff;
+  cursor:pointer;
+  backdrop-filter: blur(6px);
+  transition: transform .18s ease, opacity .18s ease;
+}
+.vStart:hover{transform: scale(1.01)}
+.vStart:active{transform: scale(.99)}
+
+/* Message states */
+.msg{margin-top:12px;min-height:22px}
+.msg.ok{color:rgba(140, 255, 210, .95)}
+.msg.bad{color:rgba(255, 140, 170, .95)}
+
+/* Small micro-interactions */
+.shake{animation:shake .22s linear}
+@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+.reveal{animation:reveal .28s ease both}
+@keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
