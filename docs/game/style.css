@@ -310,3 +310,54 @@ hr.sep{
 .topbarControls .volWrap {
   min-width: 220px;  /* чтобы не “перепрыгивало” */
 }
+/* ===== WOW motion pack ===== */
+:root{
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation: none !important; transition: none !important; }
+}
+
+/* экран плавно появляется при каждом render (мы перерендериваем DOM) */
+#app{
+  animation: screenIn .42s var(--ease-out) both;
+}
+@keyframes screenIn{
+  from{ opacity:0; transform: translateY(10px) scale(.99); filter: blur(2px); }
+  to  { opacity:1; transform: translateY(0) scale(1);   filter: blur(0); }
+}
+
+/* карточка ключа (ты уже добавляешь .is-in в JS) */
+.keyCard{
+  opacity:0;
+  transform: translateY(10px);
+  transition: opacity .35s var(--ease-out), transform .35s var(--ease-out);
+}
+.keyCard.is-in{
+  opacity:1;
+  transform: translateY(0);
+}
+
+/* кнопки ответов — премиум hover */
+.optBtn{
+  transition: transform .18s var(--ease-out), border-color .18s var(--ease-out), background .18s var(--ease-out);
+  will-change: transform;
+}
+.optBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.22) !important;
+  background: rgba(255,255,255,.08) !important;
+}
+.optBtn:active{
+  transform: translateY(0);
+}
+
+/* обычные кнопки */
+.btn, #btnReset, #btnStart, #btnOpenFinal, #btnToStart, .iconBtn{
+  transition: transform .18s var(--ease-out), background .18s var(--ease-out), border-color .18s var(--ease-out), opacity .18s var(--ease-out);
+}
+.btn:hover, #btnReset:hover, #btnStart:hover, #btnOpenFinal:hover, #btnToStart:hover, .iconBtn:hover{
+  transform: translateY(-1px);
+}
+

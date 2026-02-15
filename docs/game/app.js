@@ -132,21 +132,40 @@
     }, 16);
   }
 
-  function playBgm() {
-    if (!tracks.length) return;
-    if (!bgm.src) {
-      bgm.src = tracks[currentTrack % tracks.length];
-    }
-    bgm.onended = () => {
-      currentTrack = (currentTrack + 1) % tracks.length;
-      bgm.src = tracks[currentTrack];
-      bgm.currentTime = 0;
-      bgm.play().catch(() => {});
-    };
-    // мягкий старт
-    bgm.volume = 0;
-    bgm.play().then(() => fadeTo(bgmVol, 500)).catch(() => {});
+  let bgmStarted = false;
+
+function playBgm() {
+  if (!tracks.length) return;
+
+  // если уже играет — ничего не делаем (важно!)
+  if (!bgm.paused && bgm.currentTime > 0) return;
+
+  if (!bgm.src) {
+    bgm.src = tracks[currentTrack % tracks.length];
   }
+
+  bgm.onended = () => {
+    currentTrack = (currentTrack + 1) % tracks.length;
+    bgm.src = tracks[currentTrack];
+    bgm.currentTime = 0;
+    bgm.play().catch(() => {});
+  };
+
+  bgm.play()
+    .then(() => {
+      // плавный старт только 1 раз за сессию
+      if (!bgmStarted) {
+        bgmStarted = true;
+        const target = bgmVol;
+        bgm.volume = 0;
+        fadeTo(target, 500);
+      } else {
+        // дальше просто держим сохранённую громкость
+        bgm.volume = bgmVol;
+      }
+    })
+    .catch(() => {});
+}
 
   function stopBgm() {
     if (!tracks.length) return;
