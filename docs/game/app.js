@@ -551,3 +551,79 @@
   }, true);
 
 })();
+(function WOW_AUTO(){
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  // 1) Wrap each render into .screen for fade+slide
+  const ensureScreen = () => {
+    const first = app.firstElementChild;
+    if (first && first.classList.contains("screen")) return;
+    const wrap = document.createElement("div");
+    wrap.className = "screen";
+    while (app.firstChild) wrap.appendChild(app.firstChild);
+    app.appendChild(wrap);
+  };
+  ensureScreen();
+
+  let raf = 0;
+  new MutationObserver(() => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(ensureScreen);
+  }).observe(app, { childList: true });
+
+  // 2) Cursor glow ONLY for answer buttons and cards (NOT for range sliders)
+  document.addEventListener("pointermove", (e) => {
+    if (e.target.closest('input[type="range"]')) return;
+
+    const el = e.target.closest(".optBtn, .btn, .card, .panel, .box, .section");
+    if (!el) return;
+
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width) * 100;
+    const my = ((e.clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", mx + "%");
+    el.style.setProperty("--my", my + "%");
+  }, { passive: true });
+
+  // 3) Ripple on click for answer buttons + normal buttons (NOT sliders)
+  document.addEventListener("click", (e) => {
+    if (e.target.closest('input[type="range"]')) return;
+
+    const btn = e.target.closest(".optBtn, button.btn, button");
+    if (!btn) return;
+
+    const r = btn.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    const s = document.createElement("span");
+    s.className = "ripple";
+    s.style.left = x + "px";
+    s.style.top  = y + "px";
+    btn.appendChild(s);
+    setTimeout(() => s.remove(), 650);
+  }, { passive: true });
+
+  // 4) Gentle tilt ONLY for cards (avoid messing with layout)
+  const tilt = (card, e) => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    const rx = (0.5 - py) * 6;
+    const ry = (px - 0.5) * 8;
+    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+  };
+
+  document.addEventListener("pointermove", (e) => {
+    const card = e.target.closest(".card, .panel, .box, .section");
+    if (!card) return;
+    tilt(card, e);
+  }, { passive: true });
+
+  document.addEventListener("pointerleave", (e) => {
+    const card = e.target.closest(".card, .panel, .box, .section");
+    if (!card) return;
+    card.style.transform = "";
+  }, true);
+})();
