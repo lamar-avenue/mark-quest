@@ -284,3 +284,29 @@ hr.sep{
   font-size: 12px;
   color: var(--muted);
 }
+/* === Key panel smooth appear === */
+.keyCard {
+  opacity: 0;
+  transform: translateY(-8px);
+  filter: blur(2px);
+  transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), filter .45s ease;
+  will-change: opacity, transform, filter;
+}
+
+.keyCard.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* чтобы не ломало layout при громкости */
+.topbarControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.topbarControls .volWrap {
+  min-width: 220px;  /* чтобы не “перепрыгивало” */
+}
