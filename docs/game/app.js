@@ -248,6 +248,7 @@
 
     if (!animate) {
       app.innerHTML = `<div class="stage"><div class="screen">${html}</div></div>`;
+	  bindAfterRender(); // <-- ВАЖНО: чтобы кнопки работали после render(false)
       return;
     }
 
