@@ -825,35 +825,37 @@ function renderVideoLevel(level, shownLevelNum) {
   }
 
   // 3) Клики по вариантам
-  document.querySelectorAll(".optBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (solved) return;
-      const idx = Number(btn.dataset.idx);
-      const ok = idx === Number(level.answerIndex);
+  // 3) Клики по вариантам
+document.querySelectorAll(".optBtn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (solved) return;
 
-      if (!ok) {
-        if (msg) msg.textContent = "❌ Неверно. Попробуй ещё.";
-        // держим паузу на stopAt
-        if (v && stopAt > 0) {
-          v.pause();
-          try { v.currentTime = stopAt; } catch (_) {}
-        }
-        return;
+    const idx = Number(btn.dataset.idx);
+    const ok = idx === Number(level.answerIndex);
+
+    if (!ok) {
+      if (msg) msg.textContent = "✘ Неверно. Попробуй ещё.";
+      // держим паузу на stopAt
+      if (v && stopAt > 0) {
+        v.pause();
+        try { v.currentTime = stopAt; } catch (_) {}
       }
+      return;
+    }
 
-      // правильный
-      solved = true;
-      hideOptions();
-      if (msg) msg.textContent = "✅ Верно. Смотри продолжение…";
+    // правильный
+    solved = true;
+    hideOptions();
+    if (msg) msg.textContent = "✅ Верно. Смотри продолжение…";
 
-      // продолжаем видео
-      if (v) {
-        // чуть дальше stopAt, чтобы снова не сработал gateCheck из-за точного равенства
-        if (stopAt > 0) {
-          try { v.currentTime = Math.min(stopAt + 0.05, v.duration || stopAt + 0.05); } catch (_) {}
-        }
-        v.play().catch(() => {});
+    if (v) {
+      // чуть дальше stopAt, чтобы снова не сработал gateCheck
+      if (stopAt > 0) {
+        try { v.currentTime = Math.min(stopAt + 0.05, v.duration || stopAt + 0.05); } catch (_) {}
       }
-    });
-}
+      v.play().catch(() => {});
+    }
+  });
+});
+
 
