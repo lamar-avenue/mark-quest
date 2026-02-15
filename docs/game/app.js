@@ -627,3 +627,59 @@
     card.style.transform = "";
   }, true);
 })();
+function renderVideoLevel(level, shownLevelNum) {
+  const TOTAL_LEVELS = window.QUIZ_DATA.levels.length;
+
+  // контейнер экрана
+  setMain(`
+    <div class="screen" id="screen">
+      <div class="card pad-lg" style="max-width:980px;margin:22px auto;padding:22px;">
+        <div style="opacity:.85;font-weight:700;">Прогресс: ${shownLevelNum}/${TOTAL_LEVELS}</div>
+        <div style="font-size:34px;font-weight:900;margin-top:6px;">${escapeHtml(level.title || `Уровень ${shownLevelNum}/${TOTAL_LEVELS}`)}</div>
+        <div class="muted" style="margin-top:8px;">${escapeHtml(level.question || "")}</div>
+
+        <div class="card" style="margin-top:16px;padding:12px;">
+          <video id="qVideo"
+                 src="${level.videoSrc}"
+                 controls
+                 playsinline
+                 preload="metadata"
+                 style="width:100%;height:auto;border-radius:14px;display:block;background:#000;">
+          </video>
+        </div>
+
+        <div style="margin-top:14px;display:grid;gap:10px;">
+          ${level.options.map((t, i) =>
+            `<button class="btn optBtn" data-idx="${i}" style="padding:14px 16px;text-align:left;">
+              ${escapeHtml(t)}
+            </button>`
+          ).join("")}
+        </div>
+
+        <div id="msg" class="muted" style="margin-top:12px;min-height:22px;"></div>
+      </div>
+    </div>
+  `);
+
+  // плавный вход
+  requestAnimationFrame(() => {
+    const s = document.getElementById("screen");
+    if (s) s.classList.add("is-in");
+  });
+
+  // обработка ответа
+  document.querySelectorAll(".optBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.idx);
+      const ok = idx === Number(level.answerIndex);
+
+      const msg = document.getElementById("msg");
+      if (ok) {
+        if (msg) msg.innerHTML = `✅ Верно.`;
+        onCorrectAnswer(level.keyChar);
+      } else {
+        if (msg) msg.innerHTML = `❌ Неверно. Попробуй ещё.`;
+      }
+    });
+  });
+}

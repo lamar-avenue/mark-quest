@@ -14,7 +14,20 @@ window.QUIZ_DATA = {
   levels: [
     { title:"Уровень 1/12", question:"Разогрев. Что обычно бывает сразу после дня рождения?", options:["Новый год","День после дня рождения","Лето"], answerIndex:1, keyChar:"M" },
     { title:"Уровень 2/12", question:"Вопрос 2", options:["A","B","C"], answerIndex:0, keyChar:"A" },
-    { title:"Уровень 3/12", question:"Вопрос 3", options:["A","B","C"], answerIndex:0, keyChar:"R" },
+    {
+  type: "video",
+  title: "Уровень 3/12 — ЧБД",
+  question: "Смотри отрывок до кульминации. Что будет дальше?",
+  videoSrc: "game/assets/level3/chbd.mp4",
+  options: [
+    "Вариант A — ...",
+    "Вариант B — ...",
+    "Вариант C — ..."
+  ],
+  answerIndex: 1,   // правильный вариант (0=A, 1=B, 2=C)
+  keyChar: "R"      // символ ключа за правильный ответ
+},
+
     { title:"Уровень 4/12", question:"Вопрос 4", options:["A","B","C"], answerIndex:0, keyChar:"K" },
     { title:"Уровень 5/12", question:"Что важнее в подарке?", options:["Цена","Оригинальность","Упаковка"], answerIndex:1, keyChar:"2" },
     { title:"Уровень 6/12", question:"Вопрос 6", options:["A","B","C"], answerIndex:0, keyChar:"0" },
