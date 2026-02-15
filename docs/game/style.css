@@ -312,3 +312,36 @@ body{
 
 /* Make cursor visible (если ты раньше скрывал) */
 html, body { cursor: auto; }
+/* ===== Screen transitions (fade + slide) ===== */
+#app{ position: relative; }
+.screenLayer{
+  position:absolute;
+  inset:0;
+  will-change: transform, opacity, filter;
+}
+.screenLayer.is-enter{
+  opacity:0;
+  transform: translateY(14px) scale(.992);
+  filter: blur(6px);
+}
+.screenLayer.is-enter-active{
+  opacity:1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition: opacity .42s ease, transform .42s cubic-bezier(.2,.8,.2,1), filter .42s ease;
+}
+.screenLayer.is-exit{
+  opacity:1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+.screenLayer.is-exit-active{
+  opacity:0;
+  transform: translateY(-10px) scale(.992);
+  filter: blur(6px);
+  pointer-events:none;
+  transition: opacity .32s ease, transform .32s ease, filter .32s ease;
+}
+
+/* when only one layer exists (first render), we don't want absolute to collapse height */
+#app > .screenLayer:only-child{ position: relative; }
