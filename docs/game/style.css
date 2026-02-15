@@ -279,3 +279,123 @@ body{
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
+/* =========================
+   WOW: Custom cursor + Magnet buttons
+   ========================= */
+
+/* На тач-устройствах курсор не нужен */
+@media (hover: none), (pointer: coarse) {
+  .cursorDot, .cursorRing { display: none !important; }
+  body { cursor: auto !important; }
+}
+
+/* Прячем стандартный курсор только на ПК */
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: none; }
+  .btn, .optBtn, .audioBtn, input[type="range"] { cursor: none; }
+}
+
+/* Кастомный курсор */
+.cursorDot{
+  position: fixed;
+  left: 0; top: 0;
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  transform: translate3d(-50%, -50%, 0);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+  opacity: .95;
+}
+
+.cursorRing{
+  position: fixed;
+  left: 0; top: 0;
+  width: 34px; height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.35);
+  background: radial-gradient(16px 16px at 50% 50%, rgba(120,170,255,.16), transparent 60%);
+  transform: translate3d(-50%, -50%, 0);
+  pointer-events: none;
+  z-index: 9998;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: .80;
+}
+
+/* Когда навели на кнопку — курсор “активный” */
+.cursorHover .cursorRing{
+  width: 42px; height: 42px;
+  border-color: rgba(180,210,255,.55);
+  background: radial-gradient(18px 18px at 50% 50%, rgba(180,210,255,.22), transparent 62%);
+  opacity: .95;
+}
+.cursorHover .cursorDot{
+  opacity: 1;
+}
+
+/* Магнитный эффект (наводка) */
+.btn, .optBtn, .audioBtn{
+  will-change: transform;
+}
+.magnetActive{
+  transform: translate3d(var(--mxT, 0px), var(--myT, 0px), 0) !important;
+}
+// =========================
+// WOW: Magnetic buttons
+// =========================
+function bindMagnet() {
+  if (!cursorEnabled) return;
+
+  const magnetSelectors = ".btn, .optBtn, .audioBtn";
+  const strength = 0.35;     // сила притяжения
+  const radiusBoost = 18;    // “радиус захвата” вокруг кнопки
+
+  $$(magnetSelectors).forEach((el) => {
+    // чтобы не тянуть range ползунок
+    if (el.matches("input[type='range']")) return;
+
+    let active = false;
+
+    function onMove(e) {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+
+      // если курсор рядом — магнитим
+      const maxX = (r.width / 2) + radiusBoost;
+      const maxY = (r.height / 2) + radiusBoost;
+
+      const inside = Math.abs(dx) < maxX && Math.abs(dy) < maxY;
+
+      if (!inside) {
+        if (active) {
+          active = false;
+          el.classList.remove("magnetActive");
+          el.style.setProperty("--mxT", "0px");
+          el.style.setProperty("--myT", "0px");
+        }
+        return;
+      }
+
+      active = true;
+      el.classList.add("magnetActive");
+      el.style.setProperty("--mxT", `${dx * strength}px`);
+      el.style.setProperty("--myT", `${dy * strength}px`);
+    }
+
+    function reset() {
+      active = false;
+      el.classList.remove("magnetActive");
+      el.style.setProperty("--mxT", "0px");
+      el.style.setProperty("--myT", "0px");
+    }
+
+    window.addEventListener("mousemove", onMove, { passive: true });
+    el.addEventListener("pointerleave", reset);
+  });
+}
