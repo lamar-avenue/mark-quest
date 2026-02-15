@@ -291,7 +291,7 @@ body{
 
 /* Прячем стандартный курсор только на ПК */
 @media (hover: hover) and (pointer: fine) {
-  body { cursor: none; }
+  /*body { cursor: none; }
   .btn, .optBtn, .audioBtn, input[type="range"] { cursor: none; }
 }
 
@@ -398,4 +398,34 @@ function bindMagnet() {
     window.addEventListener("mousemove", onMove, { passive: true });
     el.addEventListener("pointerleave", reset);
   });
+}
+/* FORCE cursor visible on top */
+.cursorDot,
+.cursorRing{
+  position: fixed !important;
+  left: 0; top: 0;
+  transform: translate3d(-9999px,-9999px,0);
+  pointer-events: none !important;
+  z-index: 999999 !important;
+  opacity: 1 !important;
+  display: block !important;
+  visibility: visible !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
+}
+
+.cursorDot{
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 0 18px rgba(255,255,255,.35);
+}
+
+.cursorRing{
+  width: 42px; height: 42px;
+  margin-left: -21px;
+  margin-top: -21px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.35);
+  box-shadow: 0 0 30px rgba(160,120,255,.15);
 }
