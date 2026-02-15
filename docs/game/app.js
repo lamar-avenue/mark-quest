@@ -401,3 +401,68 @@
 
   render();
 })();
+// =========================
+// WOW UI helpers (toasts + ripple + hover glow)
+// =========================
+(function WOW_UI(){
+  // toast container
+  let wrap = document.querySelector(".toast-wrap");
+  if (!wrap){
+    wrap = document.createElement("div");
+    wrap.className = "toast-wrap";
+    document.body.appendChild(wrap);
+  }
+
+  function toast({type="bad", title="Упс", subtitle="", ms=2200}){
+    const t = document.createElement("div");
+    t.className = `toast ${type}`;
+    t.innerHTML = `
+      <div class="ico">${type==="ok" ? "✅" : "❌"}</div>
+      <div>
+        <div class="txt">${title}</div>
+        ${subtitle ? `<div class="sub">${subtitle}</div>` : ""}
+      </div>
+      <button class="x" aria-label="Закрыть">✕</button>
+    `;
+    wrap.appendChild(t);
+
+    const close = () => {
+      t.style.animation = "toastOut .28s ease forwards";
+      setTimeout(() => t.remove(), 260);
+    };
+    t.querySelector(".x").addEventListener("click", close);
+
+    if (ms) setTimeout(close, ms);
+  }
+
+  // expose globally so you can call it from existing logic
+  window.UI_TOAST = toast;
+
+  // ripple on click (delegated)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button, .btn, .option, .answer, .choice");
+    if (!btn) return;
+
+    const r = btn.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    const s = document.createElement("span");
+    s.className = "ripple";
+    s.style.left = x + "px";
+    s.style.top  = y + "px";
+    btn.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }, { passive: true });
+
+  // cursor glow position for buttons
+  document.addEventListener("pointermove", (e) => {
+    const el = e.target.closest("button, .btn, .option, .answer, .choice");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width) * 100;
+    const my = ((e.clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", mx + "%");
+    el.style.setProperty("--my", my + "%");
+  }, { passive: true });
+})();
