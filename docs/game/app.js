@@ -732,12 +732,12 @@ function mountScreen(html, { animate = true } = {}) {
 
   // 2) Cursor glow ONLY for answer buttons and cards (NOT for range sliders)
   document.addEventListener("pointermove", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    if (t.closest('input[type="range"]')) return;
+    const tgt = _evtTargetEl(e); if (!tgt) return;
+    if (tgt.closest('input[type="range"]')) return;
 
-    const t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-    if (!t) return;
-    const el = t.closest(".optBtn, .btn, .card, .panel, .box, .section");
+    const node = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
+    if (!node) return;
+    const el = node.closest(".optBtn, .btn, .card, .panel, .box, .section");
     if (!el) return;
 
     const r = el.getBoundingClientRect();
@@ -749,12 +749,12 @@ function mountScreen(html, { animate = true } = {}) {
 
   // 3) Ripple on click for answer buttons + normal buttons (NOT sliders)
   document.addEventListener("click", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    if (t.closest('input[type="range"]')) return;
+    const tgt = _evtTargetEl(e); if (!tgt) return;
+    if (tgt.closest('input[type="range"]')) return;
 
-    const t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-    if (!t) return;
-    const btn = t.closest(".optBtn, button.btn, button");
+    const node = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
+    if (!node) return;
+    const btn = node.closest(".optBtn, button.btn, button");
     if (!btn) return;
 
     const r = btn.getBoundingClientRect();
