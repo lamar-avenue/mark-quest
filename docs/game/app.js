@@ -243,40 +243,32 @@
 
   // ---------- Screen transitions ----------
   const app = $("#app");
-  function setScreenHTML(html, animate = true) {
-    if (!app) return;
+function setScreenHTML(html, animate = true) {
+  const app = $("#app");
+  if (!app) return;
 
-    if (!animate) {
-      app.innerHTML = `<div class="stage"><div class="screen">${html}</div></div>`;
-	  bindAfterRender(); // <-- ВАЖНО: чтобы кнопки работали после render(false)
-      return;
-    }
+  // ВАЖНО: всегда рендерим новый DOM
+  app.innerHTML = `
+    <div class="stage">
+      <div class="screen ${animate ? "screen--enter" : ""}">
+        ${html}
+      </div>
+    </div>
+  `;
 
-    const old = app.querySelector(".screen");
-    if (old) old.classList.add("out");
+  // ВАЖНО: всегда заново вешаем обработчики после любого рендера
+  try { bindAfterRender(); } catch (e) { console.error("bindAfterRender failed:", e); }
 
-    // mount new
-    const wrap = document.createElement("div");
-    wrap.className = "stage";
-    const scr = document.createElement("div");
-    scr.className = "screen";
-    scr.innerHTML = html;
-    wrap.appendChild(scr);
-
-    // Replace after small delay so out animation shows
-    if (old) {
-      setTimeout(() => {
-        app.innerHTML = "";
-        app.appendChild(wrap);
-        // bind interactions
-        bindAfterRender();
-      }, 170);
-    } else {
-      app.innerHTML = "";
-      app.appendChild(wrap);
-      bindAfterRender();
-    }
+  // Анимация — только визуал, не влияет на логику
+  if (animate) {
+    requestAnimationFrame(() => {
+      const screen = app.querySelector(".screen");
+      if (!screen) return;
+      screen.classList.add("screen--in");
+    });
   }
+}
+
 
   function bindCommon() {
     const btnMute = $("#btnMute");
