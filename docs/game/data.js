@@ -19,6 +19,7 @@ window.QUIZ_DATA = {
   title: "Уровень 3/12 — ЧБД",
   question: "Смотри отрывок до кульминации. Что будет дальше?",
   videoSrc: "game/assets/level3/chbd.mp4",
+  stopAt: 12.5,
   options: [
     "Вариант A — ...",
     "Вариант B — ...",

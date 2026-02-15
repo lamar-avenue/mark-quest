@@ -630,7 +630,6 @@
 function renderVideoLevel(level, shownLevelNum) {
   const TOTAL_LEVELS = window.QUIZ_DATA.levels.length;
 
-  // контейнер экрана
   setMain(`
     <div class="screen" id="screen">
       <div class="card pad-lg" style="max-width:980px;margin:22px auto;padding:22px;">
@@ -648,7 +647,7 @@ function renderVideoLevel(level, shownLevelNum) {
           </video>
         </div>
 
-        <div style="margin-top:14px;display:grid;gap:10px;">
+        <div id="videoOptions" style="margin-top:14px;display:none;gap:10px;">
           ${level.options.map((t, i) =>
             `<button class="btn optBtn" data-idx="${i}" style="padding:14px 16px;text-align:left;">
               ${escapeHtml(t)}
@@ -661,25 +660,90 @@ function renderVideoLevel(level, shownLevelNum) {
     </div>
   `);
 
-  // плавный вход
   requestAnimationFrame(() => {
     const s = document.getElementById("screen");
     if (s) s.classList.add("is-in");
   });
 
-  // обработка ответа
+  const v = document.getElementById("qVideo");
+  const optWrap = document.getElementById("videoOptions");
+  const msg = document.getElementById("msg");
+
+  const stopAt = Number(level.stopAt ?? 0);
+  let gated = false;         // уже остановили на кульминации
+  let solved = false;        // правильный ответ выбран
+
+  function showOptions() {
+    if (optWrap) optWrap.style.display = "grid";
+    if (msg) msg.textContent = "Что будет дальше? Выбери вариант.";
+  }
+
+  function hideOptions() {
+    if (optWrap) optWrap.style.display = "none";
+  }
+
+  // 1) Останавливаем видео в нужный момент и показываем варианты
+  function gateCheck() {
+    if (!v || solved) return;
+    if (stopAt > 0 && v.currentTime >= stopAt && !gated) {
+      gated = true;
+      v.pause();
+      // фиксируем кадр ровно на stopAt
+      try { v.currentTime = stopAt; } catch (_) {}
+      showOptions();
+    }
+  }
+
+  if (v) {
+    v.addEventListener("timeupdate", gateCheck);
+
+    // на всякий: если браузер проскочил timeupdate
+    v.addEventListener("seeked", gateCheck);
+
+    // 2) После правильного ответа — видео продолжается, а засчитываем уровень ТОЛЬКО когда видео закончится
+    v.addEventListener("ended", () => {
+      if (!solved) return;
+      // теперь можно засчитать уровень и перейти дальше
+      onCorrectAnswer(level.keyChar);
+    });
+
+    // если stopAt не задан — показываем варианты сразу (чтоб не сломалось)
+    if (!stopAt || stopAt <= 0) {
+      showOptions();
+    }
+  }
+
+  // 3) Клики по вариантам
   document.querySelectorAll(".optBtn").forEach(btn => {
     btn.addEventListener("click", () => {
+      if (solved) return;
       const idx = Number(btn.dataset.idx);
       const ok = idx === Number(level.answerIndex);
 
-      const msg = document.getElementById("msg");
-      if (ok) {
-        if (msg) msg.innerHTML = `✅ Верно.`;
-        onCorrectAnswer(level.keyChar);
-      } else {
-        if (msg) msg.innerHTML = `❌ Неверно. Попробуй ещё.`;
+      if (!ok) {
+        if (msg) msg.textContent = "❌ Неверно. Попробуй ещё.";
+        // держим паузу на stopAt
+        if (v && stopAt > 0) {
+          v.pause();
+          try { v.currentTime = stopAt; } catch (_) {}
+        }
+        return;
+      }
+
+      // правильный
+      solved = true;
+      hideOptions();
+      if (msg) msg.textContent = "✅ Верно. Смотри продолжение…";
+
+      // продолжаем видео
+      if (v) {
+        // чуть дальше stopAt, чтобы снова не сработал gateCheck из-за точного равенства
+        if (stopAt > 0) {
+          try { v.currentTime = Math.min(stopAt + 0.05, v.duration || stopAt + 0.05); } catch (_) {}
+        }
+        v.play().catch(() => {});
       }
     });
   });
 }
+
