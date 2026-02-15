@@ -855,6 +855,6 @@ function renderVideoLevel(level, shownLevelNum) {
         v.play().catch(() => {});
       }
     });
-  });
+ 
 }
 
