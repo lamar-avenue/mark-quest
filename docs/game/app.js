@@ -466,3 +466,88 @@
     el.style.setProperty("--my", my + "%");
   }, { passive: true });
 })();
+// =========================
+// WOW auto-enhance (no need to know your classes)
+// Put at the very end of app.js
+// =========================
+(function WOW_AUTO(){
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  // 1) Wrap current content into .screen on each render (MutationObserver)
+  const ensureScreen = () => {
+    // if app has direct text nodes etc - wrap everything
+    const hasScreen = app.firstElementChild && app.firstElementChild.classList.contains("screen");
+    if (hasScreen) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "screen";
+
+    // move all nodes into wrap
+    while (app.firstChild) wrap.appendChild(app.firstChild);
+    app.appendChild(wrap);
+  };
+
+  ensureScreen();
+
+  let raf = 0;
+  const obs = new MutationObserver(() => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => ensureScreen());
+  });
+  obs.observe(app, { childList: true });
+
+  // 2) Ripple on click for buttons/options
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button, .btn, .option, .answer, .choice");
+    if (!btn) return;
+
+    // avoid rippling sliders or volume track if they are buttons (rare)
+    if (btn.closest('input[type="range"]')) return;
+
+    const r = btn.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    const s = document.createElement("span");
+    s.className = "ripple";
+    s.style.left = x + "px";
+    s.style.top  = y + "px";
+    btn.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }, { passive: true });
+
+  // 3) Cursor glow positions for buttons AND cards
+  document.addEventListener("pointermove", (e) => {
+    const el = e.target.closest("button, .btn, .option, .answer, .choice, .card, .panel, .box, .section");
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / r.width) * 100;
+    const my = ((e.clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", mx + "%");
+    el.style.setProperty("--my", my + "%");
+  }, { passive: true });
+
+  // 4) Gentle 3D parallax for cards
+  const tilt = (card, e) => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;  // 0..1
+    const py = (e.clientY - r.top) / r.height; // 0..1
+    const rx = (0.5 - py) * 6; // deg
+    const ry = (px - 0.5) * 8; // deg
+    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0)`;
+  };
+
+  document.addEventListener("pointermove", (e) => {
+    const card = e.target.closest(".card, .panel, .box, .section");
+    if (!card) return;
+    tilt(card, e);
+  }, { passive: true });
+
+  document.addEventListener("pointerleave", (e) => {
+    const card = e.target.closest(".card, .panel, .box, .section");
+    if (!card) return;
+    card.style.transform = "";
+  }, true);
+
+})();

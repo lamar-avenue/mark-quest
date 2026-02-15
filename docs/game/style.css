@@ -614,3 +614,47 @@ function bindMagnet() {
   60%{ transform: translateX(-4px); }
   80%{ transform: translateX(4px); }
 }
+/* ===== Screen transitions (fade+slide) ===== */
+#app { position: relative; }
+#app .screen {
+  animation: screenIn .55s cubic-bezier(.2,.9,.2,1) both;
+  transform-origin: 50% 20%;
+}
+@keyframes screenIn{
+  from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(8px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+/* ===== Card parallax hover ===== */
+.card, .panel, .box, .section {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform .18s cubic-bezier(.2,.9,.2,1);
+}
+.card::after, .panel::after, .box::after, .section::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: inherit;
+  pointer-events:none;
+  background: radial-gradient(240px 200px at var(--mx,50%) var(--my,50%),
+    rgba(120,170,255,.12),
+    rgba(180,120,255,.08),
+    transparent 60%);
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.card:hover::after, .panel:hover::after, .box:hover::after, .section:hover::after { opacity: 1; }
+
+/* ===== Better wrong-answer text (if it exists) ===== */
+.msg, .message, .status, #msg, #message {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(15,18,26,.45);
+  backdrop-filter: blur(14px);
+  color: rgba(255,255,255,.92);
+}
+
+/* Smooth show/hide */
+.is-hidden { display:none !important; }
