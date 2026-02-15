@@ -865,3 +865,8 @@ function bindMagnet() {
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 14px 50px rgba(0,0,0,.5);
 }
+.fadeIn { animation: fadeInUp .35s ease both; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

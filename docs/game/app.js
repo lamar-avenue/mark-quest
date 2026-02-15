@@ -25,6 +25,19 @@
     levelIndex: 0,
     key: ""
   });
+  function projectBase() {
+  // для https://lamar-avenue.github.io/mark-quest/... вернёт "/mark-quest/"
+  const p = location.pathname.split("/").filter(Boolean);
+  return p.length ? `/${p[0]}/` : "/";
+}
+
+function withBase(rel) {
+  if (!rel) return rel;
+  if (/^(https?:)?\/\//.test(rel)) return rel;   // http(s)://
+  if (rel.startsWith("/")) return rel;           // уже абсолютный
+  return projectBase() + rel.replace(/^\.?\//, "");
+}
+
 
   let state = load();
 
@@ -630,57 +643,155 @@
 function renderVideoLevel(level, shownLevelNum) {
   const TOTAL_LEVELS = window.QUIZ_DATA.levels.length;
 
+  // UI
   setMain(`
     <div class="screen" id="screen">
-      <div class="card pad-lg" style="max-width:980px;margin:22px auto;padding:22px;">
-        <div style="opacity:.85;font-weight:700;">Прогресс: ${shownLevelNum}/${TOTAL_LEVELS}</div>
-        <div style="font-size:34px;font-weight:900;margin-top:6px;">${escapeHtml(level.title || `Уровень ${shownLevelNum}/${TOTAL_LEVELS}`)}</div>
-        <div class="muted" style="margin-top:8px;">${escapeHtml(level.question || "")}</div>
+      <div class="card pad-lg level" style="max-width:980px;margin:22px auto;padding:22px;">
+        <div style="opacity:.78;font-weight:700;">Уровень ${shownLevelNum}/${TOTAL_LEVELS} — ${escapeHtml(level.title || "Видео")}</div>
+        <div style="font-size:20px;font-weight:900;margin-top:8px;">${escapeHtml(level.question || "")}</div>
 
-        <div class="card" style="margin-top:16px;padding:12px;">
-          <video id="qVideo"
-                 src="${level.videoSrc}"
-                 controls
-                 playsinline
-                 preload="metadata"
-                 style="width:100%;height:auto;border-radius:14px;display:block;background:#000;">
-          </video>
+        <div class="card" style="margin-top:14px;padding:14px;">
+          <div class="videoWrap" style="position:relative;border-radius:14px;overflow:hidden;background:#000;">
+            <video id="video"
+              src="${escapeHtml(level.videoSrc)}"
+              controls
+              playsinline
+              preload="metadata"
+              style="width:100%;height:auto;display:block;">
+            </video>
+
+            <button id="videoStartBtn" class="btn"
+              style="
+                position:absolute;inset:0;
+                display:flex;align-items:center;justify-content:center;
+                font-weight:900;font-size:18px;
+                background:linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.55));
+                border:0;border-radius:14px;
+              ">
+              ▶ Смотреть
+            </button>
+          </div>
+
+          <div id="videoHelp" class="muted" style="margin-top:10px;opacity:.8;">
+            Видео остановится в нужный момент — потом появятся варианты ответа.
+          </div>
+
+          <div id="videoOptions" style="margin-top:14px;display:none;gap:10px;">
+            ${level.options.map((t, i) => `
+              <button class="btn optBtn" data-idx="${i}" style="padding:14px 16px;text-align:left;">
+                ${escapeHtml(t)}
+              </button>
+            `).join("")}
+          </div>
+
+          <div id="msg" class="muted" style="margin-top:12px;min-height:22px;"></div>
         </div>
-
-        <div id="videoOptions" style="margin-top:14px;display:none;gap:10px;">
-          ${level.options.map((t, i) =>
-            `<button class="btn optBtn" data-idx="${i}" style="padding:14px 16px;text-align:left;">
-              ${escapeHtml(t)}
-            </button>`
-          ).join("")}
-        </div>
-
-        <div id="msg" class="muted" style="margin-top:12px;min-height:22px;"></div>
       </div>
     </div>
   `);
 
-  requestAnimationFrame(() => {
-    const s = document.getElementById("screen");
-    if (s) s.classList.add("is-in");
-  });
-
-  const v = document.getElementById("qVideo");
-  const optWrap = document.getElementById("videoOptions");
+  const video = document.getElementById("video");
+  const startBtn = document.getElementById("videoStartBtn");
+  const optsBox = document.getElementById("videoOptions");
   const msg = document.getElementById("msg");
 
+  // stopAt (секунды)
   const stopAt = Number(level.stopAt ?? 0);
-  let gated = false;         // уже остановили на кульминации
-  let solved = false;        // правильный ответ выбран
+  let stoppedOnce = false;
+  let started = false;
 
   function showOptions() {
-    if (optWrap) optWrap.style.display = "grid";
-    if (msg) msg.textContent = "Что будет дальше? Выбери вариант.";
+    optsBox.style.display = "grid";
+    optsBox.classList.add("fadeIn");
   }
 
   function hideOptions() {
-    if (optWrap) optWrap.style.display = "none";
+    optsBox.style.display = "none";
+    optsBox.classList.remove("fadeIn");
   }
+
+  function setMsg(text, ok = false) {
+    msg.textContent = text || "";
+    msg.style.opacity = text ? "1" : "0";
+    msg.style.color = ok ? "rgba(140,255,200,.95)" : "rgba(255,170,170,.95)";
+  }
+
+  // Запуск (чтобы браузер точно разрешил play)
+  startBtn.addEventListener("click", async () => {
+    try {
+      started = true;
+      startBtn.style.display = "none";
+      setMsg("");
+      await video.play();
+    } catch (e) {
+      // если браузер блокирует — покажем подсказку
+      startBtn.style.display = "flex";
+      setMsg("Нажми ещё раз ▶ (браузер иногда блокирует автозапуск).");
+    }
+  });
+
+  // Остановка в момент stopAt
+  video.addEventListener("timeupdate", () => {
+    if (!started) return;
+    if (stoppedOnce) return;
+    if (!stopAt) return;
+
+    if (video.currentTime >= stopAt) {
+      stoppedOnce = true;
+      video.pause();
+      // чуть “отпрыгнем” назад, чтобы не перескочило при play
+      video.currentTime = Math.max(0, stopAt - 0.03);
+
+      // плавно показываем варианты
+      showOptions();
+      setMsg("Что будет дальше? Выбери вариант.");
+    }
+  });
+
+  // Клики по вариантам
+  optsBox.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".optBtn");
+    if (!btn) return;
+
+    const idx = Number(btn.dataset.idx);
+    if (Number.isNaN(idx)) return;
+
+    if (idx === Number(level.answerIndex)) {
+      setMsg("Верно ✅", true);
+
+      // 1) начисляем символ ключа
+      if (typeof applyCorrectAnswer === "function") {
+        // если у тебя уже есть общий обработчик — используй его
+        applyCorrectAnswer(level);
+      } else {
+        // fallback: вручную
+        state.key = (state.key || "") + (level.keyChar || "");
+        state.levelIndex = Math.min(state.levelIndex + 1, TOTAL_LEVELS - 1);
+        saveState();
+      }
+
+      // 2) прячем варианты и продолжаем видео
+      hideOptions();
+      setTimeout(async () => {
+        try {
+          // продолжим чуть после stopAt
+          video.currentTime = stopAt ? (stopAt + 0.02) : video.currentTime;
+          await video.play();
+        } catch (_) {}
+      }, 250);
+
+    } else {
+      setMsg("Неверно. Попробуй ещё.", false);
+      // остаёмся на паузе, варианты остаются
+    }
+  });
+
+  // Когда видео полностью закончилось — идём дальше
+  video.addEventListener("ended", () => {
+    // если у тебя правильный ответ уже перевёл levelIndex — просто render()
+    if (typeof render === "function") render();
+  });
+}
 
   // 1) Останавливаем видео в нужный момент и показываем варианты
   function gateCheck() {
