@@ -1224,3 +1224,46 @@ function bindMagnet() {
   box-shadow: 0 10px 30px rgba(0,0,0,.35);
   border: 1px solid rgba(0,0,0,.15);
 }
+// ===== WOW buttons: cursor shine + tilt (delegation) =====
+(function initButtonWow(){
+  const SELECTOR = ".btn, .optBtn, .option, .answer, .choice";
+
+  function setVars(el, clientX, clientY){
+    const r = el.getBoundingClientRect();
+    const mx = ((clientX - r.left) / r.width) * 100;
+    const my = ((clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", mx.toFixed(2) + "%");
+    el.style.setProperty("--my", my.toFixed(2) + "%");
+  }
+
+  function setTilt(el, clientX, clientY){
+    const r = el.getBoundingClientRect();
+    const dx = (clientX - (r.left + r.width/2)) / (r.width/2);
+    const dy = (clientY - (r.top + r.height/2)) / (r.height/2);
+    const rotY = dx * 5;      // сила наклона
+    const rotX = -dy * 4;
+    el.style.transform = `translateY(-1px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+  }
+
+  document.addEventListener("pointermove", (e) => {
+    const el = e.target.closest?.(SELECTOR);
+    if (!el) return;
+    setVars(el, e.clientX, e.clientY);
+    setTilt(el, e.clientX, e.clientY);
+  }, { passive: true });
+
+  document.addEventListener("pointerleave", (e) => {
+    const el = e.target.closest?.(SELECTOR);
+    if (!el) return;
+    el.style.transform = "";
+  }, true);
+
+  // когда курсор уходит с элемента — вернуть transform
+  document.addEventListener("pointerout", (e) => {
+    const el = e.target.closest?.(SELECTOR);
+    if (!el) return;
+    // если ушли именно с него (а не на его детей)
+    if (e.relatedTarget && el.contains(e.relatedTarget)) return;
+    el.style.transform = "";
+  }, true);
+})();
