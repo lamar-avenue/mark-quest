@@ -66,6 +66,27 @@ function pulseProgress(kind = "ok") {
 
   /** @type {{levelIndex:number, key:string}} */
   let state = loadState();
+  
+function clearFeedback(){
+  document.querySelectorAll(".optBtn.is-wrong,.optBtn.is-correct,.optBtn.pop,.optBtn.shakeHard")
+    .forEach(el => el.classList.remove("is-wrong","is-correct","pop","shakeHard"));
+  document.querySelectorAll(".options.dimOthers")
+    .forEach(el => el.classList.remove("dimOthers"));
+}
+
+function markWrong(btn){
+  clearFeedback();
+  btn.classList.add("is-wrong","shakeHard");
+  setTimeout(() => btn.classList.remove("shakeHard"), 450);
+}
+
+function markCorrect(btn){
+  clearFeedback();
+  btn.classList.add("is-correct","pop");
+  const wrap = btn.closest(".options");
+  if (wrap) wrap.classList.add("dimOthers");
+  setTimeout(() => btn.classList.remove("pop"), 350);
+}
 
   // ---------------- Music ----------------
   const music = new Audio();
