@@ -597,3 +597,31 @@ video{
   .key__value, .key-value, .keycode{ font-size: 16px; letter-spacing: .22em; }
   input[type="range"]{ width: 120px; }
 }
+/* === STATIC aura (no mouse follow) === */
+:root{
+  /* можно вообще удалить --mx/--my если где-то были */
+  --mx: 50%;
+  --my: 35%;
+}
+
+.bg__glow{
+  position: absolute;
+  inset: -20%;
+  /* статичные “пятна” как в фигме: blue/purple/teal */
+  background:
+    radial-gradient(600px 600px at 50% 35%, rgba(59,130,246,.22), transparent 60%),
+    radial-gradient(520px 520px at 20% 25%, rgba(168,85,247,.14), transparent 62%),
+    radial-gradient(520px 520px at 82% 55%, rgba(45,212,191,.14), transparent 62%);
+  filter: blur(120px);
+  opacity: .65;
+  transform: translate3d(0,0,0);
+  transition: opacity 200ms ease;
+}
+body{ background:#050505; }
+.bg{
+  background:
+    radial-gradient(900px 650px at 50% 35%, rgba(59,130,246,.12), transparent 60%),
+    radial-gradient(700px 500px at 20% 25%, rgba(168,85,247,.10), transparent 62%),
+    radial-gradient(700px 500px at 82% 55%, rgba(45,212,191,.10), transparent 62%),
+    linear-gradient(180deg, #050505, #070A12);
+}
