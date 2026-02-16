@@ -13,10 +13,36 @@
 
 <body>
   <noscript>Нужен JavaScript, чтобы квест работал.</noscript>
+  
+  <header class="topbar">
+  <div class="brand">
+    <div class="brand-title">MARK QUEST</div>
+    <div class="brand-subtitle">Birthday Special Edition</div>
+  </div>
+
+  <div class="volume-pill">
+    <!-- твоя кнопка mute -->
+    <!-- твой range -->
+  </div>
+</header>
+
+<div class="progress-line">
+  <div class="fill" style="width: 0%"></div>
+</div>
+
+
+<main>
+  <div class="layout-grid">
+    <section class="glass-card"> ...левый блок... </section>
+    <aside class="glass-card"> ...ключ... </aside>
+  </div>
+</main>
+
 
   <!-- Background layers -->
   <div class="bg" aria-hidden="true">
     <div class="bg__noise"></div>
+	<div class="bg" aria-hidden="true"></div>
     <div class="bg__vignette"></div>
     <div class="bg__glow"></div>
   </div>
@@ -30,3 +56,4 @@
   <script src="./game/app.js?v=90"></script>
 </body>
 </html>
+
