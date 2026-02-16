@@ -571,3 +571,39 @@ function markCorrect(btn){
 
   window.addEventListener('pointermove', onMove, { passive: true });
 })();
+// Cursor aura follow (background only). No tilt.
+(() => {
+  const root = document.documentElement;
+
+  // стартовая позиция (чтобы не было "прыжка")
+  let x = 0.5, y = 0.35;
+  let tx = x, ty = y;
+  let raf = 0;
+
+  const setVars = () => {
+    root.style.setProperty("--mx", (x * 100).toFixed(2) + "%");
+    root.style.setProperty("--my", (y * 100).toFixed(2) + "%");
+  };
+  setVars();
+
+  const tick = () => {
+    raf = 0;
+    // мягкое следование (не дёргается)
+    x += (tx - x) * 0.10;
+    y += (ty - y) * 0.10;
+    setVars();
+
+    // продолжаем пока “догоняет”
+    if (Math.abs(tx - x) + Math.abs(ty - y) > 0.002) {
+      raf = requestAnimationFrame(tick);
+    }
+  };
+
+  window.addEventListener("pointermove", (e) => {
+    const vw = Math.max(1, window.innerWidth);
+    const vh = Math.max(1, window.innerHeight);
+    tx = e.clientX / vw;
+    ty = e.clientY / vh;
+    if (!raf) raf = requestAnimationFrame(tick);
+  }, { passive: true });
+})();

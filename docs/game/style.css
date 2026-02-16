@@ -59,30 +59,25 @@ button, input{ font: inherit; color: inherit; }
   position:absolute;
   inset:0;
   pointer-events:none;
+
+  /* главный “пятно-градиент” следует за курсором */
   background:
-    radial-gradient(600px 600px at 50% 35%, rgba(59,130,246,.20), transparent 60%),
-    radial-gradient(520px 520px at 20% 25%, rgba(168,85,247,.12), transparent 62%),
-    radial-gradient(520px 520px at 82% 55%, rgba(45,212,191,.12), transparent 62%);
+    radial-gradient(650px 650px at var(--mx) var(--my),
+      rgba(59,130,246,.22),
+      rgba(45,212,191,.12) 40%,
+      rgba(168,85,247,.10) 70%,
+      transparent 75%
+    ),
+
+    /* статичные боковые ауры как в фигме */
+    radial-gradient(420px 420px at 12% 25%, rgba(168,85,247,.10), transparent 65%),
+    radial-gradient(420px 420px at 88% 70%, rgba(45,212,191,.10), transparent 65%);
+
   filter: blur(120px);
   opacity: .65;
-}
 
-.bg__vignette{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(1200px 700px at 50% 20%, transparent 35%, rgba(0,0,0,.60) 85%),
-    radial-gradient(900px 600px at 50% 120%, rgba(0,0,0,.55), transparent 60%);
-}
-
-.bg__noise{
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  opacity:.06;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+  transform: translate3d(0,0,0);
+  transition: opacity 200ms ease;
 }
 
 /* ---------- PAGE WRAP ---------- */
