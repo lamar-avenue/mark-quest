@@ -1,658 +1,53 @@
 /* =========================================
-   MARK QUEST — Premium UI (Dark cinematic + glass)
-   No frameworks. Designed to be resilient to markup differences.
+   MARK QUEST — FIGMA ZIP LOOK (STATIC)
+   Vanilla CSS for your REAL DOM from app.js:
+   .topbar .brandTitle .brandSub .audio .progressBar .progressFill
+   .grid2 .card .keyCard .btn .options .optBtn .videoWrap ...
    ========================================= */
 
-/* ---------- CSS Reset (lightweight) ---------- */
 *,
 *::before,
 *::after { box-sizing: border-box; }
 
 html, body { height: 100%; }
-body {
+
+:root{
+  --bg: #050505;
+
+  --w05: rgba(255,255,255,.05);
+  --w08: rgba(255,255,255,.08);
+  --w10: rgba(255,255,255,.10);
+  --w20: rgba(255,255,255,.20);
+
+  --txt1: rgba(255,255,255,.92);
+  --txt2: rgba(255,255,255,.66);
+  --txt3: rgba(255,255,255,.42);
+
+  --blue: rgba(96,165,250,1);   /* figma vibe */
+  --teal: rgba(45,212,191,1);
+  --purple: rgba(168,85,247,1);
+
+  --r: 24px;
+  --r2: 18px;
+
+  --shadow: 0 8px 32px rgba(0,0,0,.30);
+}
+
+body{
   margin: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: rgba(255,255,255,.86);
-  background: #070A12;
+  background: var(--bg);
+  color: var(--txt1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ---------- Theme tokens ---------- */
-:root{
-  /* background */
-  --bg-0:#070A12;
-  --bg-1:#0A0F1E;
-  --bg-2:#0B1327;
+a{ color: inherit; text-decoration: none; }
+img, video{ max-width:100%; display:block; }
+button, input{ font: inherit; color: inherit; }
 
-  /* glass */
-  --glass: rgba(255,255,255,.06);
-  --glass-strong: rgba(255,255,255,.09);
-  --stroke: rgba(255,255,255,.12);
-  --stroke-soft: rgba(255,255,255,.08);
-
-  /* text */
-  --t-1: rgba(255,255,255,.92);
-  --t-2: rgba(255,255,255,.70);
-  --t-3: rgba(255,255,255,.55);
-
-  /* accents */
-  --a-1: #7C5CFF;
-  --a-2: #2DE2E6;
-  --a-3: #FF4D8D;
-  --a-warm:#FFB86B;
-
-  /* shadows */
-  --shadow-1: 0 18px 60px rgba(0,0,0,.55);
-  --shadow-2: 0 10px 30px rgba(0,0,0,.40);
-  --shadow-in: inset 0 1px 0 rgba(255,255,255,.08);
-
-  /* radii & spacing */
-  --r-lg: 24px;
-  --r-md: 18px;
-  --r-sm: 14px;
-  --pad: 24px;
-  --gap: 18px;
-
-  /* motion */
-  --e: cubic-bezier(.2,.85,.2,1);
-  --fade: 220ms;
-  --slide: 280ms;
-
-  /* cursor aura (filled by JS, fallback center) */
-  --mx: 50%;
-  --my: 35%;
-}
-
-/* ---------- Background layers ---------- */
-/* If you already have .bg, .bg__noise, .bg__vignette, .bg__glow — it will look premium. */
+/* ---------- STATIC AURA BACKGROUND (no mouse follow) ---------- */
 .bg{
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  overflow: hidden;
-  background:
-    radial-gradient(1200px 700px at 20% 10%, rgba(124,92,255,.18), transparent 60%),
-    radial-gradient(900px 600px at 80% 25%, rgba(45,226,230,.14), transparent 62%),
-    radial-gradient(1100px 700px at 45% 110%, rgba(255,77,141,.10), transparent 55%),
-    linear-gradient(180deg, var(--bg-0), var(--bg-2));
-}
-
-.bg__glow{
-  position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(900px 650px at var(--mx) var(--my),
-      rgba(124,92,255,.22),
-      rgba(45,226,230,.11) 35%,
-      transparent 65%);
-  filter: blur(18px);
-  opacity: .75;
-  transform: translate3d(0,0,0);
-  transition: opacity 200ms var(--e);
-}
-
-.bg__vignette{
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(1200px 700px at 50% 20%, transparent 35%, rgba(0,0,0,.55) 85%),
-    radial-gradient(900px 600px at 50% 120%, rgba(0,0,0,.50), transparent 60%);
-  pointer-events: none;
-}
-
-.bg__noise{
-  position: absolute;
-  inset: 0;
-  opacity: .07;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
-}
-
-/* ---------- Layout helpers ---------- */
-a { color: inherit; text-decoration: none; }
-img, video { max-width: 100%; display: block; }
-button, input, textarea { font: inherit; color: inherit; }
-
-.container, .app, main{
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 26px 0 36px;
-}
-
-/* ---------- Topbar ---------- */
-/* Works if you have .topbar or header. */
-.topbar, header.topbar, header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-  border: 1px solid var(--stroke-soft);
-  box-shadow: var(--shadow-2), var(--shadow-in);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.brand, .titleblock{
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.brand__title, .title, h1{
-  margin: 0;
-  font-size: 16px;
-  letter-spacing: .2px;
-  font-weight: 700;
-  color: var(--t-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.brand__subtitle, .subtitle{
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--t-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* compact volume control right side */
-.volume, .audio, .sound, .volume-control{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 10px 25px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-.volume label, .volume .label, .volume-control .label{
-  font-size: 12px;
-  color: var(--t-3);
-}
-
-input[type="range"]{
-  -webkit-appearance: none;
-  width: 160px;
-  height: 18px;
-  background: transparent;
-  outline: none;
-}
-input[type="range"]::-webkit-slider-runnable-track{
-  height: 6px;
-  border-radius: 999px;
-  background:
-    linear-gradient(90deg, rgba(124,92,255,.9), rgba(45,226,230,.85));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-}
-input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance: none;
-  width: 16px; height: 16px;
-  margin-top: -5px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  box-shadow:
-    0 10px 20px rgba(0,0,0,.35),
-    0 0 0 6px rgba(124,92,255,.20);
-  border: 1px solid rgba(255,255,255,.35);
-  transition: transform 140ms var(--e);
-}
-input[type="range"]:active::-webkit-slider-thumb{ transform: scale(1.06); }
-
-input[type="range"]::-moz-range-track{
-  height: 6px; border-radius: 999px;
-  background: linear-gradient(90deg, rgba(124,92,255,.9), rgba(45,226,230,.85));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-}
-input[type="range"]::-moz-range-thumb{
-  width: 16px; height: 16px; border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(255,255,255,.35);
-  box-shadow: 0 10px 20px rgba(0,0,0,.35), 0 0 0 6px rgba(124,92,255,.20);
-}
-
-/* ---------- Premium progress bar ---------- */
-.progress, .progress-wrap{
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--r-lg);
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.09);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 18px 50px rgba(0,0,0,.35);
-}
-
-.progress__row, .progress-row{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.progress__label, .progress-label{
-  font-size: 12.5px;
-  color: var(--t-2);
-  font-weight: 600;
-}
-.progress__meta, .progress-meta{
-  font-size: 12px;
-  color: var(--t-3);
-}
-
-.progress__bar, .bar, .progressbar{
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* if your JS sets width on .progress__fill / .fill — it will glow */
-.progress__fill, .fill, .progressbar > span{
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(45,226,230,.90), rgba(255,77,141,.75));
-  box-shadow: 0 10px 28px rgba(124,92,255,.25);
-  position: relative;
-  transition: width 420ms var(--e);
-}
-.progress__fill::after, .fill::after, .progressbar > span::after{
-  content:"";
-  position: absolute;
-  inset: -40% -25%;
-  background:
-    radial-gradient(260px 40px at 30% 50%, rgba(255,255,255,.35), transparent 70%),
-    linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
-  transform: translateX(-35%);
-  animation: shimmer 2.4s var(--e) infinite;
-  opacity: .55;
-}
-@keyframes shimmer{
-  0%{ transform: translateX(-55%); }
-  60%{ transform: translateX(55%); }
-  100%{ transform: translateX(55%); }
-}
-
-/* ---------- Main grid ---------- */
-.grid, .layout, .content{
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: 1.6fr .9fr;
-  gap: var(--gap);
-  align-items: start;
-}
-
-/* mobile stack */
-@media (max-width: 900px){
-  .grid, .layout, .content{
-    grid-template-columns: 1fr;
-  }
-  input[type="range"]{ width: 140px; }
-}
-
-/* ---------- Glass cards ---------- */
-.card, .panel, .box, .screen, section, article{
-  border-radius: var(--r-lg);
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: var(--shadow-1), var(--shadow-in);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.card{ padding: var(--pad); }
-.panel{ padding: var(--pad); }
-.box{ padding: var(--pad); }
-
-/* subtle top highlight line */
-.card::before, .panel::before, .box::before, .screen::before{
-  content:"";
-  display:block;
-  height: 1px;
-  width: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
-  opacity: .55;
-  margin-bottom: 14px;
-}
-
-/* ---------- Typography ---------- */
-h2, .h2{
-  margin: 0 0 10px;
-  font-size: 20px;
-  letter-spacing: .2px;
-  font-weight: 750;
-  color: var(--t-1);
-}
-h3, .h3{
-  margin: 0 0 10px;
-  font-size: 16px;
-  letter-spacing: .15px;
-  font-weight: 700;
-  color: var(--t-1);
-}
-p, .text, .desc, .description{
-  margin: 0 0 12px;
-  color: var(--t-2);
-  line-height: 1.55;
-  font-size: 14px;
-}
-small, .muted{
-  color: var(--t-3);
-}
-
-/* Ensure task description is visually on top */
-.task-desc, .level-desc, .question, .prompt{
-  margin-bottom: 16px;
-}
-
-/* ---------- Inputs ---------- */
-input[type="text"],
-input[type="password"],
-input[type="email"],
-textarea{
-  width: 100%;
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: rgba(0,0,0,.25);
-  border: 1px solid rgba(255,255,255,.12);
-  outline: none;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-  color: var(--t-1);
-  transition: border-color 160ms var(--e), transform 160ms var(--e), box-shadow 160ms var(--e);
-}
-textarea{ min-height: 110px; resize: vertical; }
-
-input::placeholder, textarea::placeholder{ color: rgba(255,255,255,.40); }
-
-input:focus, textarea:focus{
-  border-color: rgba(124,92,255,.55);
-  box-shadow:
-    0 0 0 4px rgba(124,92,255,.14),
-    inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* ---------- Buttons ---------- */
-button, .btn, .button{
-  border: 0;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 16px;
-  padding: 12px 14px;
-  background: rgba(255,255,255,.06);
-  color: var(--t-1);
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 18px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
-  transition: transform 140ms var(--e), box-shadow 180ms var(--e), border-color 180ms var(--e), background 180ms var(--e);
-}
-
-button:hover, .btn:hover, .button:hover{
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.18);
-  box-shadow:
-    0 22px 55px rgba(0,0,0,.42),
-    0 0 0 6px rgba(45,226,230,.07),
-    inset 0 1px 0 rgba(255,255,255,.07);
-}
-
-button:active, .btn:active, .button:active{
-  transform: translateY(0px) scale(.99);
-  box-shadow: 0 16px 38px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
-}
-
-.btn-primary, button.primary, .primary{
-  background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(45,226,230,.85));
-  border-color: rgba(255,255,255,.16);
-  box-shadow:
-    0 24px 55px rgba(124,92,255,.20),
-    0 18px 45px rgba(0,0,0,.40),
-    inset 0 1px 0 rgba(255,255,255,.10);
-}
-.btn-primary:hover, button.primary:hover, .primary:hover{
-  box-shadow:
-    0 26px 70px rgba(124,92,255,.24),
-    0 0 0 7px rgba(124,92,255,.10),
-    inset 0 1px 0 rgba(255,255,255,.11);
-}
-
-.btn-danger, .danger{
-  background: rgba(255,77,141,.16);
-  border-color: rgba(255,77,141,.30);
-}
-
-.btn-ghost, .ghost{
-  background: transparent;
-  border-color: rgba(255,255,255,.12);
-}
-
-/* Button groups / answer options */
-.options, .answers, .choices{
-  display: grid;
-  gap: 10px;
-  margin-top: 12px;
-}
-@media (min-width: 901px){
-  .options.cols-2, .answers.cols-2, .choices.cols-2{ grid-template-columns: 1fr 1fr; }
-}
-
-/* ---------- Key card (right on desktop, bottom on mobile) ---------- */
-.key, .keycard, .key-card, aside{
-  padding: var(--pad);
-}
-
-.key__title, .key-title{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  margin: 0 0 10px;
-}
-
-.key__value, .key-value, .keycode{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  letter-spacing: .25em;
-  font-weight: 800;
-  font-size: 18px;
-  color: rgba(255,255,255,.88);
-  padding: 14px 14px;
-  border-radius: 16px;
-  background: rgba(0,0,0,.22);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-  overflow-wrap: anywhere;
-}
-
-.key__hint, .key-hint{
-  margin-top: 10px;
-  color: var(--t-3);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-/* ---------- Video level card ---------- */
-.video-wrap, .video-card, .video-level, .player{
-  padding: var(--pad);
-}
-
-video{
-  width: 100%;
-  border-radius: 18px;
-  background: rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 22px 60px rgba(0,0,0,.55);
-  outline: none;
-}
-
-/* Nice “frame” around embedded player */
-.video-frame{
-  border-radius: 22px;
-  padding: 12px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 26px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
-}
-.video-frame video{ border-radius: 16px; }
-
-/* ---------- Screen transitions (fade + slide) ---------- */
-/*
-  Recommended: put current level content inside an element with class .screen (or add it).
-  When switching, toggle:
-  - add .is-leaving to current screen
-  - add .is-entering to next screen (remove after render)
-*/
-.screen{
-  will-change: transform, opacity, filter;
-  transform: translateY(0);
-  opacity: 1;
-  filter: blur(0px);
-  transition:
-    opacity var(--fade) var(--e),
-    transform var(--slide) var(--e),
-    filter var(--fade) var(--e);
-}
-
-.screen.is-leaving{
-  opacity: 0;
-  transform: translateY(8px);
-  filter: blur(6px);
-  pointer-events: none;
-}
-
-.screen.is-entering{
-  opacity: 0;
-  transform: translateY(10px);
-  filter: blur(7px);
-}
-
-.screen.is-entering.is-ready{
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-
-/* ---------- Inline toasts / errors ---------- */
-.error, .wrong, .alert-error{
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(255,77,141,.12);
-  border: 1px solid rgba(255,77,141,.28);
-  color: rgba(255,255,255,.86);
-}
-
-.success, .ok, .alert-ok{
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(45,226,230,.10);
-  border: 1px solid rgba(45,226,230,.22);
-  color: rgba(255,255,255,.86);
-}
-
-/* ---------- Footer-ish small text ---------- */
-.footer, .note{
-  margin-top: 14px;
-  color: var(--t-3);
-  font-size: 12px;
-}
-
-/* ---------- Accessibility: reduced motion ---------- */
-@media (prefers-reduced-motion: reduce){
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  .bg__glow{ opacity: .55; }
-}
-
-/* ---------- Small polish: focus rings ---------- */
-:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(124,92,255,.18);
-  border-radius: 12px;
-}
-
-/* ---------- Mobile tightening ---------- */
-@media (max-width: 520px){
-  .container, .app, main{
-    width: min(1180px, calc(100% - 22px));
-    padding: 18px 0 28px;
-  }
-  .topbar, header.topbar, header{
-    padding: 12px 12px;
-  }
-  .card, .panel, .box{ padding: 18px; }
-  .key__value, .key-value, .keycode{ font-size: 16px; letter-spacing: .22em; }
-  input[type="range"]{ width: 120px; }
-}
-/* === STATIC aura (no mouse follow) === */
-:root{
-  /* можно вообще удалить --mx/--my если где-то были */
-  --mx: 50%;
-  --my: 35%;
-}
-
-.bg__glow{
-  position: absolute;
-  inset: -20%;
-  /* статичные “пятна” как в фигме: blue/purple/teal */
-  background:
-    radial-gradient(600px 600px at 50% 35%, rgba(59,130,246,.22), transparent 60%),
-    radial-gradient(520px 520px at 20% 25%, rgba(168,85,247,.14), transparent 62%),
-    radial-gradient(520px 520px at 82% 55%, rgba(45,212,191,.14), transparent 62%);
-  filter: blur(120px);
-  opacity: .65;
-  transform: translate3d(0,0,0);
-  transition: opacity 200ms ease;
-}
-body{ background:#050505; }
-.bg{
-  background:
-    radial-gradient(900px 650px at 50% 35%, rgba(59,130,246,.12), transparent 60%),
-    radial-gradient(700px 500px at 20% 25%, rgba(168,85,247,.10), transparent 62%),
-    radial-gradient(700px 500px at 82% 55%, rgba(45,212,191,.10), transparent 62%),
-    linear-gradient(180deg, #050505, #070A12);
-}
-/* ================================
-   FIGMA ZIP LOOK (exact vibe)
-   Static aura + fixed topbar + glass cards
-   ================================ */
-
-:root{
-  --bg:#050505;
-  --w05: rgba(255,255,255,.05);
-  --w10: rgba(255,255,255,.10);
-  --w20: rgba(255,255,255,.20);
-  --txt40: rgba(255,255,255,.40);
-  --txt60: rgba(255,255,255,.60);
-
-  --blue: rgba(59,130,246,1);   /* #3b82f6 */
-  --teal: rgba(45,212,191,1);   /* #2dd4bf */
-  --purple: rgba(168,85,247,1); /* #a855f7 */
-}
-
-html, body{ height:100%; }
-body{
-  margin:0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg);
-  color:#fff;
-}
-
-/* --- Static Aura Background (NO mouse follow) --- */
-.bg, .aura-bg{
   position: fixed;
   inset: 0;
   z-index: -10;
@@ -660,239 +55,291 @@ body{
   background: var(--bg);
 }
 
-.bg::before, .aura-bg::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:35%;
-  width:600px;
-  height:600px;
-  border-radius:9999px;
-  transform: translate(-50%,-50%);
-  background: rgba(59,130,246,.20);
-  filter: blur(120px);
-  opacity:.50;
-}
-
-.bg::after, .aura-bg::after{
-  content:"";
+.bg__glow{
   position:absolute;
   inset:0;
+  pointer-events:none;
   background:
-    radial-gradient(380px 380px at 0% 25%, rgba(168,85,247,.10), transparent 65%),
-    radial-gradient(380px 380px at 100% 75%, rgba(45,212,191,.10), transparent 65%);
-  filter: blur(100px);
+    radial-gradient(600px 600px at 50% 35%, rgba(59,130,246,.20), transparent 60%),
+    radial-gradient(520px 520px at 20% 25%, rgba(168,85,247,.12), transparent 62%),
+    radial-gradient(520px 520px at 82% 55%, rgba(45,212,191,.12), transparent 62%);
+  filter: blur(120px);
+  opacity: .65;
 }
 
-/* --- Fixed Topbar like ZIP --- */
+.bg__vignette{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 50% 20%, transparent 35%, rgba(0,0,0,.60) 85%),
+    radial-gradient(900px 600px at 50% 120%, rgba(0,0,0,.55), transparent 60%);
+}
+
+.bg__noise{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+}
+
+/* ---------- PAGE WRAP ---------- */
+.shell{
+  /* app.js рисует topbar фиксированным — нужно место сверху */
+  padding: 120px 24px 56px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ---------- HUD (generated by app.js) ---------- */
 .topbar{
   position: fixed;
-  top:0; left:0; right:0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
-  padding: 16px 24px;
+
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
+  gap: 18px;
+
+  padding: 16px 24px;
+
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(255,255,255,.05);
+  background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.12));
 }
 
-.brand{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-
-.brand-title{
+.brandTitle{
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, rgba(96,165,250,1), rgba(45,212,191,1));
-  -webkit-background-clip:text;
-  background-clip:text;
+  line-height: 1.15;
+
+  background: linear-gradient(90deg, var(--blue), var(--teal));
+  -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
 }
 
-.brand-subtitle{
+.brandSub{
+  margin-top: 6px;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .2em;
-  font-weight: 600;
-  color: var(--txt40);
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: var(--txt3);
 }
 
-/* volume pill */
-.volume-pill{
+.muted{ color: var(--txt2); }
+
+.pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+}
+
+.pill{
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--w05);
+  border: 1px solid var(--w10);
+  color: rgba(255,255,255,.82);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mono{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  letter-spacing: .18em;
+}
+
+/* audio pill (right) */
+.audio{
   display:flex;
   align-items:center;
-  gap:12px;
+  gap: 12px;
   padding: 6px 12px;
   border-radius: 9999px;
   background: var(--w05);
   border: 1px solid var(--w10);
+  height: fit-content;
 }
 
-.volume-pill button{
+.audioBtn{
   background: transparent;
-  border:0;
-  color:#fff;
-  opacity:.85;
-  cursor:pointer;
-  transition: color 180ms ease, opacity 180ms ease;
+  border: 0;
+  cursor: pointer;
+  opacity: .9;
+  transition: transform 160ms ease, opacity 160ms ease;
 }
-.volume-pill button:hover{ color: rgba(96,165,250,1); opacity:1; }
+.audioBtn:hover{ opacity: 1; transform: scale(1.06); }
+.audioBtn:active{ transform: scale(.95); }
 
-.volume-pill input[type="range"]{
-  width: 64px;
+.audioRange{
+  width: 80px;
   height: 4px;
   appearance: none;
   background: rgba(255,255,255,.20);
   border-radius: 999px;
   outline: none;
 }
-.volume-pill input[type="range"]::-webkit-slider-thumb{
+.audioRange::-webkit-slider-thumb{
   appearance:none;
   width: 12px; height: 12px;
   border-radius: 50%;
   background: rgba(59,130,246,1);
   cursor:pointer;
 }
-.volume-pill input[type="range"]::-moz-range-thumb{
+.audioRange::-moz-range-thumb{
   width: 12px; height: 12px;
   border-radius: 50%;
   background: rgba(59,130,246,1);
-  border:0;
-  cursor:pointer;
+  border: 0;
+  cursor: pointer;
 }
 
-/* --- Thin Progress Line like ZIP --- */
-.progress-line{
+.audioPct{
+  min-width: 36px;
+  text-align:right;
+  font-size: 12px;
+  color: var(--txt2);
+}
+
+/* thin progress line (app.js uses .progressBar/.progressFill) */
+.progressBar{
   position: fixed;
-  top: 68px; left:0; right:0;
-  z-index: 50;
+  top: 70px; /* under topbar */
+  left: 0;
+  right: 0;
+  z-index: 49;
+
   height: 2px;
   background: rgba(255,255,255,.05);
-  overflow:hidden;
+  overflow: hidden;
 }
-.progress-line .fill{
+
+.progressFill{
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, rgba(59,130,246,1), rgba(45,212,191,1), rgba(168,85,247,1));
+  background: linear-gradient(90deg, var(--blue), var(--teal), var(--purple));
   position: relative;
   transition: width 450ms ease;
 }
-.progress-line .fill::after{
+.progressFill::after{
   content:"";
   position:absolute;
   inset:0;
   background: rgba(255,255,255,.30);
+  opacity:.28;
   animation: pulse 1.2s ease-in-out infinite;
-  opacity:.35;
 }
 @keyframes pulse{
-  0%,100%{ opacity:.20; }
-  50%{ opacity:.45; }
+  0%,100%{ opacity:.18; }
+  50%{ opacity:.42; }
 }
 
-/* --- Main spacing like ZIP --- */
-main, .main{
-  padding-top: 128px; /* pt-32 */
-  padding-bottom: 48px;
-  padding-left: 24px;
-  padding-right: 24px;
-  max-width: 1280px; /* max-w-7xl */
-  margin: 0 auto;
-}
-
-/* --- Layout grid like ZIP (1 col -> 3 cols) --- */
-.layout-grid{
+/* ---------- LAYOUT FROM app.js (.grid2) ---------- */
+.grid2{
   display:grid;
   grid-template-columns: 1fr;
   gap: 32px;
 }
 @media (min-width: 1024px){
-  .layout-grid{ grid-template-columns: 2fr 1fr; }
+  .grid2{ grid-template-columns: 2fr 1fr; }
 }
 
-/* --- GlassCard exact --- */
-.glass-card, .card{
+/* ---------- GLASS CARD ---------- */
+.card{
   position: relative;
   overflow: hidden;
-  border-radius: 24px; /* rounded-2xl */
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.05);
+  border-radius: var(--r);
+  border: 1px solid var(--w10);
+  background: var(--w05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px 0 rgba(0,0,0,.30);
-  padding: 32px;
+  box-shadow: var(--shadow);
 }
-.glass-card::before, .card::before{
+
+.card::before{
   content:"";
   position:absolute;
   inset:0;
   background: linear-gradient(135deg, rgba(255,255,255,.05), transparent);
   pointer-events:none;
 }
-.glass-card > * , .card > *{ position: relative; z-index:1; }
+.card > *{ position: relative; z-index: 1; }
 
-/* --- Title chips / dots row --- */
-.level-kicker{
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: rgba(96,165,250,1);
-}
-.dots{
-  display:flex;
-  gap:4px;
-}
-.dots .dot{
-  width:6px; height:6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.10);
-}
-.dots .dot.is-active{ background: rgba(59,130,246,1); }
+.pad-lg{ padding: 32px; }
 
-/* --- ZIP button style (white, premium) --- */
-.btn-white{
-  position: relative;
-  padding: 16px 32px;
-  border-radius: 20px;
-  background: #fff;
-  color: #000;
+.keyCard .key{
+  margin-top: 16px;
+  padding: 14px 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,.30);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+/* ---------- TEXT ---------- */
+.h1{
+  font-size: 20px;
   font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.h2{
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- BUTTONS (app.js uses .btn and option buttons have .optBtn) ---------- */
+.btn, .optBtn, .videoStartBtn{
   border: 0;
   cursor: pointer;
-  overflow:hidden;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 20px 40px -15px rgba(255,255,255,.30);
-}
-.btn-white:hover{ transform: scale(1.05); }
-.btn-white:active{ transform: scale(.95); }
-.btn-white::after{
-  content:"";
-  position:absolute; inset:0;
-  background: linear-gradient(90deg, rgba(219,234,254,1), rgba(255,255,255,1));
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-.btn-white:hover::after{ opacity: 1; }
-.btn-white > span{ position: relative; z-index: 1; }
+  border-radius: 20px;
+  padding: 12px 16px;
 
-/* --- Video frame vibe --- */
-.video-box{
-  position: relative;
-  aspect-ratio: 16/9;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+
+  box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.btn:hover, .optBtn:hover, .videoStartBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.14);
+}
+.btn:active, .optBtn:active, .videoStartBtn:active{
+  transform: translateY(0) scale(.99);
+}
+
+/* options grid */
+.options{
+  display:grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------- VIDEO ---------- */
+.videoWrap video{
+  width: 100%;
   border-radius: 12px;
   overflow: hidden;
   background: rgba(0,0,0,.40);
-  border: 1px solid rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.06);
 }
-.video-box video{
-  width:100%;
-  height:100%;
-  display:block;
-  outline:none;
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 520px){
+  .shell{ padding: 118px 16px 48px; }
+  .topbar{ padding: 14px 16px; }
+  .pad-lg{ padding: 18px; }
+  .audioRange{ width: 64px; }
 }

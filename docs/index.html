@@ -8,41 +8,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="./game/style.css?v=90" />
+  <!-- bump version to bust cache -->
+  <link rel="stylesheet" href="./game/style.css?v=91" />
 </head>
 
 <body>
   <noscript>Нужен JavaScript, чтобы квест работал.</noscript>
-  
-  <header class="topbar">
-  <div class="brand">
-    <div class="brand-title">MARK QUEST</div>
-    <div class="brand-subtitle">Birthday Special Edition</div>
-  </div>
-
-  <div class="volume-pill">
-    <!-- твоя кнопка mute -->
-    <!-- твой range -->
-  </div>
-</header>
-
-<div class="progress-line">
-  <div class="fill" style="width: 0%"></div>
-</div>
-
-
-<main>
-  <div class="layout-grid">
-    <section class="glass-card"> ...левый блок... </section>
-    <aside class="glass-card"> ...ключ... </aside>
-  </div>
-</main>
-
 
   <!-- Background layers -->
   <div class="bg" aria-hidden="true">
     <div class="bg__noise"></div>
-	<div class="bg" aria-hidden="true"></div>
     <div class="bg__vignette"></div>
     <div class="bg__glow"></div>
   </div>
@@ -52,8 +27,7 @@
   </main>
 
   <!-- IMPORTANT: data.js BEFORE app.js -->
-  <script src="./game/data.js?v=90"></script>
-  <script src="./game/app.js?v=90"></script>
+  <script src="./game/data.js?v=91"></script>
+  <script src="./game/app.js?v=91"></script>
 </body>
 </html>
-
