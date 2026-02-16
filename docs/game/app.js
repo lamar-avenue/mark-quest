@@ -36,6 +36,26 @@
     `;
     return;
   }
+// ===== Progress pulse feedback =====
+function pulseProgress(kind = "ok") {
+  const fill = document.querySelector(".progressFill");
+  const bar  = document.querySelector(".progressBar");
+  if (!fill || !bar) return;
+
+  fill.classList.remove("pulseOk", "pulseBad");
+  bar.classList.remove("barPulse");
+
+  // форсим перезапуск анимации
+  void fill.offsetWidth;
+
+  fill.classList.add(kind === "bad" ? "pulseBad" : "pulseOk");
+  bar.classList.add("barPulse");
+
+  setTimeout(() => {
+    fill.classList.remove("pulseOk", "pulseBad");
+    bar.classList.remove("barPulse");
+  }, 560);
+}
 
   const TOTAL = DATA.levels.length;
   const KEY_LEN = Number.isFinite(DATA.keyLength) ? DATA.keyLength : TOTAL;
