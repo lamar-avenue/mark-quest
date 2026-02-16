@@ -978,3 +978,135 @@ function bindMagnet() {
   box-shadow: 0 24px 80px rgba(0,0,0,.45);
   border-color: rgba(255,255,255,.12);
 }
+/* ===== Premium buttons ===== */
+.btn, .optBtn, .pill{
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before, .optBtn::before{
+  content:"";
+  position:absolute; inset:-2px;
+  background: radial-gradient(600px circle at var(--bx,50%) var(--by,50%),
+    rgba(140,190,255,.22), rgba(160,120,255,.14) 35%, rgba(0,0,0,0) 70%);
+  opacity: 0;
+  transition: opacity .25s var(--ease-out);
+  pointer-events:none;
+}
+
+.btn:hover::before, .optBtn:hover::before{ opacity: 1; }
+
+.btn:active, .optBtn:active{
+  transform: translateY(1px) scale(.995);
+}
+
+.optBtn{
+  transition: transform .25s var(--ease-out), background .25s var(--ease-out), border-color .25s var(--ease-out);
+}
+.optBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.14);
+}
+
+/* красивый “правильный” */
+.optBtn.ok{
+  border-color: rgba(120,255,180,.35) !important;
+  box-shadow: 0 14px 40px rgba(80,255,170,.12);
+}
+
+/* shake уже есть — сделаем мягче */
+.shake{ animation: shake .42s var(--ease-spring); }
+@keyframes shake{
+  0%{ transform: translateX(0) }
+  20%{ transform: translateX(-6px) }
+  40%{ transform: translateX(6px) }
+  60%{ transform: translateX(-4px) }
+  80%{ transform: translateX(4px) }
+  100%{ transform: translateX(0) }
+}
+/* ===== Message pill ===== */
+.msg{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: translateY(6px);
+  opacity: .0;
+  transition: opacity .25s var(--ease-out), transform .25s var(--ease-out);
+}
+.msg:not(:empty){
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* если хочешь разный цвет — просто добавим классы позже */
+/* ===== Video premium ===== */
+.videoWrap{
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 30px 120px rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.video{
+  display:block;
+  width:100%;
+  height:auto;
+  background:#000;
+  transform: scale(1.001);
+}
+
+/* затемнение/виньетка поверх видео */
+.videoWrap::after{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    radial-gradient(1200px 500px at 50% 120%, rgba(160,120,255,.20), transparent 60%),
+    radial-gradient(700px 300px at 20% 0%, rgba(140,190,255,.14), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.35));
+  pointer-events:none;
+}
+
+/* кнопка “▶ Смотреть” */
+.videoStartBtn{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; letter-spacing:.2px;
+  border:0; color:#fff; cursor:pointer;
+  background: linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.55));
+  border-radius: 18px;
+  transition: opacity .25s var(--ease-out), transform .25s var(--ease-out);
+}
+.videoStartBtn:hover{ transform: scale(1.01); }
+.videoStartBtn.hide{ opacity:0; pointer-events:none; }
+/* ===== Audio slider premium ===== */
+.audioRange{
+  height: 6px !important;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(140,190,255,.55), rgba(160,120,255,.55));
+  outline: none;
+  opacity: .95;
+}
+
+.audioRange::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(0,0,0,.15);
+}
+.audioRange::-moz-range-thumb{
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(0,0,0,.15);
+}
