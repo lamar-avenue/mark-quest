@@ -128,13 +128,8 @@ function markCorrect(btn){
     return `
       <div class="topbar">
         <div>
-          <div class="brandTitle">🎁 🎁 🎁 ${esc(DATA.title || "Квест для Марка")}</div>
-          <div class="brandSub muted">${esc(DATA.subtitle || "12 уровней. За каждый — 1 символ. Собери ключ и откроешь финал.")}</div>
-
-          <div class="pills" style="margin-top:10px">
-            <div class="pill">🍀 ${TOTAL} уровней</div>
-            <div class="pill">🔑 <span class="mono">${esc(key)}</span></div>
-          </div>
+          <div class="brandTitle">MARK QUEST</div>
+          <div class="brandSub">BIRTHDAY SPECIAL EDITION</div>
         </div>
 
         <div class="audio">
@@ -501,15 +496,35 @@ function markCorrect(btn){
   }
 
   // ---------------- Pointer / wow micro ----------------
-  // 1) BG gradient follows cursor: CSS reads --px/--py
-  document.addEventListener("pointermove", (e) => {
-    const x = (e.clientX / window.innerWidth) * 100;
-    const y = (e.clientY / window.innerHeight) * 100;
+  
+// 1) BG gradient follows cursor (smoothed): CSS reads --px/--py
+(() => {
+  let tx = 50, ty = 35;
+  let x = tx, y = ty;
+  let raf = 0;
+
+  function apply(){
     document.documentElement.style.setProperty("--px", x.toFixed(2) + "%");
     document.documentElement.style.setProperty("--py", y.toFixed(2) + "%");
-  }, { passive: true });
+  }
+  apply();
 
-  // 2) Button glow position: CSS reads --bx/--by and/or --mx/--my
+  function tick(){
+    raf = 0;
+    x += (tx - x) * 0.10;
+    y += (ty - y) * 0.10;
+    apply();
+    if (Math.abs(tx - x) + Math.abs(ty - y) > 0.02) raf = requestAnimationFrame(tick);
+  }
+
+  document.addEventListener("pointermove", (e) => {
+    tx = (e.clientX / window.innerWidth) * 100;
+    ty = (e.clientY / window.innerHeight) * 100;
+    if (!raf) raf = requestAnimationFrame(tick);
+  }, { passive: true });
+})();
+
+// 2) Button glow position: CSS reads --bx/--by and/or --mx/--my
   document.addEventListener("pointermove", (e) => {
     const el = safeClosest(e.target, ".btn, .optBtn, .pill");
     if (!el) return;
@@ -528,40 +543,4 @@ function markCorrect(btn){
   } else {
     render();
   }
-})();
-// Cursor aura follow (background only). No tilt.
-(() => {
-  const root = document.documentElement;
-
-  // стартовая позиция (чтобы не было "прыжка")
-  let x = 0.5, y = 0.35;
-  let tx = x, ty = y;
-  let raf = 0;
-
-  const setVars = () => {
-    root.style.setProperty("--mx", (x * 100).toFixed(2) + "%");
-    root.style.setProperty("--my", (y * 100).toFixed(2) + "%");
-  };
-  setVars();
-
-  const tick = () => {
-    raf = 0;
-    // мягкое следование (не дёргается)
-    x += (tx - x) * 0.10;
-    y += (ty - y) * 0.10;
-    setVars();
-
-    // продолжаем пока “догоняет”
-    if (Math.abs(tx - x) + Math.abs(ty - y) > 0.002) {
-      raf = requestAnimationFrame(tick);
-    }
-  };
-
-  window.addEventListener("pointermove", (e) => {
-    const vw = Math.max(1, window.innerWidth);
-    const vh = Math.max(1, window.innerHeight);
-    tx = e.clientX / vw;
-    ty = e.clientY / vh;
-    if (!raf) raf = requestAnimationFrame(tick);
-  }, { passive: true });
 })();
