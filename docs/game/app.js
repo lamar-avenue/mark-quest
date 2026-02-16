@@ -309,6 +309,69 @@ function withBase(rel) {
       keyCard.classList.remove("is-in");
       requestAnimationFrame(()=>requestAnimationFrame(()=>keyCard.classList.add("is-in")));
     }
+function setupVideoLevel(lvl){
+  if (!lvl || lvl.type !== "video") return;
+
+  const v = document.getElementById("lvlVideo");
+  const startBtn = document.getElementById("videoStartBtn");
+  const options = document.getElementById("options");
+  const stopAt = Number(lvl.stopAt || 0);
+
+  if (!v || !options) return;
+
+  let gated = false;
+  let unlocked = false;
+
+  function showOptions(){
+    options.classList.remove("is-hidden");
+    options.classList.add("fade-in");
+  }
+  function hideOptions(){
+    options.classList.add("is-hidden");
+    options.classList.remove("fade-in");
+  }
+
+  if (startBtn){
+    startBtn.addEventListener("click", ()=>{
+      startBtn.remove();
+      v.play().catch(()=>{});
+    });
+  }
+
+  function gate(){
+    if (unlocked || gated || !stopAt) return;
+    if (v.currentTime >= stopAt){
+      gated = true;
+      v.pause();
+      try { v.currentTime = stopAt; } catch(e){}
+      showOptions();
+    }
+  }
+
+  v.addEventListener("timeupdate", gate);
+  v.addEventListener("seeked", gate);
+
+  // Делаем доступным для общего обработчика ответов
+  window.__videoLevel = {
+    v,
+    stopAt,
+    showOptions,
+    hideOptions,
+    unlock(){
+      unlocked = true;
+      gated = false;
+    }
+  };
+
+  // ВАЖНО: засчитываем уровень ТОЛЬКО когда видео ДОСМОТРЕНО
+  v.addEventListener("ended", ()=>{
+    // тут вызывай твою текущую функцию "правильный ответ" / переход дальше:
+    // пример:
+    onCorrectAnswer(lvl.keyChar);
+  });
+}
+const lvl = DATA.levels[state.levelIndex];
+setupVideoLevel(lvl);
 
     bindUI();
   }
@@ -577,6 +640,18 @@ function withBase(rel) {
     setTimeout(() => ripple.remove(), 650);
   }, { passive: true });
 })();
+${lvl.type === "video" ? `
+  <div class="videoWrap">
+    <video id="lvlVideo"
+      src="${escapeAttr(lvl.videoSrc)}"
+      playsinline
+      preload="metadata"
+      controls
+    ></video>
+
+    <button id="videoStartBtn" class="videoStart btn">▶ Смотреть</button>
+  </div>
+` : ``}
 
 
 function renderVideoLevel(level, shownLevelNum) {
@@ -685,6 +760,12 @@ function renderVideoLevel(level, shownLevelNum) {
       showOptions();
       setMsg("Что будет дальше? Выбери вариант.");
     }
+	<div id="options" class="options ${lvl.type === "video" ? "is-hidden" : ""}">
+  ${lvl.options.map((t, i) => `
+    <button class="btn optBtn" data-idx="${i}">${escapeHtml(t)}</button>
+  `).join("")}
+</div>
+
   });
 
   // Клики по вариантам

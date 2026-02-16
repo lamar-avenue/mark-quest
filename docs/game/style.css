@@ -905,3 +905,38 @@ function bindMagnet() {
 
 /* when only one layer exists (first render), we don't want absolute to collapse height */
 #app > .screenLayer:only-child{ position: relative; }
+.videoWrap{
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+#lvlVideo{
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.videoStart{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 18px;
+  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65));
+  border: 0;
+}
+
+.options.is-hidden{ display:none; }
+
+.fade-in{
+  animation: fadeInUp .25s ease-out both;
+}
+
+@keyframes fadeInUp{
+  from{ opacity:0; transform: translateY(8px); }
+  to{ opacity:1; transform: translateY(0); }
+}
