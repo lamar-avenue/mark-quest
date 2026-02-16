@@ -1,1505 +1,599 @@
+/* =========================================
+   MARK QUEST — Premium UI (Dark cinematic + glass)
+   No frameworks. Designed to be resilient to markup differences.
+   ========================================= */
+
+/* ---------- CSS Reset (lightweight) ---------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: rgba(255,255,255,.86);
+  background: #070A12;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Theme tokens ---------- */
 :root{
+  /* background */
+  --bg-0:#070A12;
+  --bg-1:#0A0F1E;
+  --bg-2:#0B1327;
+
+  /* glass */
+  --glass: rgba(255,255,255,.06);
+  --glass-strong: rgba(255,255,255,.09);
+  --stroke: rgba(255,255,255,.12);
+  --stroke-soft: rgba(255,255,255,.08);
+
+  /* text */
+  --t-1: rgba(255,255,255,.92);
+  --t-2: rgba(255,255,255,.70);
+  --t-3: rgba(255,255,255,.55);
+
+  /* accents */
+  --a-1: #7C5CFF;
+  --a-2: #2DE2E6;
+  --a-3: #FF4D8D;
+  --a-warm:#FFB86B;
+
+  /* shadows */
+  --shadow-1: 0 18px 60px rgba(0,0,0,.55);
+  --shadow-2: 0 10px 30px rgba(0,0,0,.40);
+  --shadow-in: inset 0 1px 0 rgba(255,255,255,.08);
+
+  /* radii & spacing */
+  --r-lg: 24px;
+  --r-md: 18px;
+  --r-sm: 14px;
+  --pad: 24px;
+  --gap: 18px;
+
+  /* motion */
+  --e: cubic-bezier(.2,.85,.2,1);
+  --fade: 220ms;
+  --slide: 280ms;
+
+  /* cursor aura (filled by JS, fallback center) */
   --mx: 50%;
   --my: 35%;
-
-  --bg0:#05060a;
-  --bg1:#070913;
-  --bg2:#081227;
-
-  --text: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.70);
-  --muted2: rgba(255,255,255,.55);
-
-  --glass: rgba(255,255,255,.07);
-  --glass2: rgba(255,255,255,.04);
-  --stroke: rgba(255,255,255,.10);
-  --stroke2: rgba(255,255,255,.16);
-
-  --shadow: 0 24px 90px rgba(0,0,0,.55);
-  --shadow2: 0 14px 40px rgba(0,0,0,.35);
-
-  --r1: 16px;
-  --r2: 22px;
-
-  --ease: cubic-bezier(.16,1,.3,1);
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--text);
-  background: linear-gradient(180deg, var(--bg1), var(--bg0));
-  overflow-x:hidden;
-}
-
-/* Background layers from index.html */
+/* ---------- Background layers ---------- */
+/* If you already have .bg, .bg__noise, .bg__vignette, .bg__glow — it will look premium. */
 .bg{
-  position:fixed; inset:0;
-  z-index:-1;
-  pointer-events:none;
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
   background:
-    radial-gradient(900px 700px at var(--mx) var(--my), rgba(98,132,255,.20), transparent 60%),
-    radial-gradient(700px 600px at calc(var(--mx) + 18%) calc(var(--my) + 12%), rgba(206,112,255,.14), transparent 65%),
-    radial-gradient(1000px 800px at 15% 90%, rgba(26,220,183,.10), transparent 60%),
-    radial-gradient(800px 600px at 92% 22%, rgba(255,155,90,.08), transparent 60%),
-    linear-gradient(180deg, var(--bg2), var(--bg0));
-  filter:saturate(112%);
+    radial-gradient(1200px 700px at 20% 10%, rgba(124,92,255,.18), transparent 60%),
+    radial-gradient(900px 600px at 80% 25%, rgba(45,226,230,.14), transparent 62%),
+    radial-gradient(1100px 700px at 45% 110%, rgba(255,77,141,.10), transparent 55%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-2));
 }
-.bg__noise{
-  position:absolute; inset:0;
-  opacity:.11;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
-}
-.bg__vignette{
-  position:absolute; inset:-20%;
-  background: radial-gradient(1200px 900px at 50% 40%, transparent 30%, rgba(0,0,0,.70) 72%, rgba(0,0,0,.92) 100%);
-}
+
 .bg__glow{
-  position:absolute; inset:0;
-  background: radial-gradient(650px 520px at 50% 0%, rgba(255,255,255,.06), transparent 70%);
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(900px 650px at var(--mx) var(--my),
+      rgba(124,92,255,.22),
+      rgba(45,226,230,.11) 35%,
+      transparent 65%);
+  filter: blur(18px);
+  opacity: .75;
+  transform: translate3d(0,0,0);
+  transition: opacity 200ms var(--e);
 }
 
-.shell{
-  width:min(1120px, calc(100% - 48px));
-  margin: 30px auto 90px;
+.bg__vignette{
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 50% 20%, transparent 35%, rgba(0,0,0,.55) 85%),
+    radial-gradient(900px 600px at 50% 120%, rgba(0,0,0,.50), transparent 60%);
+  pointer-events: none;
 }
 
-/* Screen animation */
-#app{
-  animation: screenIn .42s var(--ease) both;
-}
-@keyframes screenIn{
-  from{opacity:0; transform: translateY(10px) scale(.99); filter: blur(2px);}
-  to{opacity:1; transform: translateY(0) scale(1); filter: blur(0);}
+.bg__noise{
+  position: absolute;
+  inset: 0;
+  opacity: .07;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
 }
 
-.grid{
-  display:grid;
+/* ---------- Layout helpers ---------- */
+a { color: inherit; text-decoration: none; }
+img, video { max-width: 100%; display: block; }
+button, input, textarea { font: inherit; color: inherit; }
+
+.container, .app, main{
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 26px 0 36px;
+}
+
+/* ---------- Topbar ---------- */
+/* Works if you have .topbar or header. */
+.topbar, header.topbar, header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+  border: 1px solid var(--stroke-soft);
+  box-shadow: var(--shadow-2), var(--shadow-in);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-.grid2{
-  display:grid;
-  grid-template-columns: 1.65fr 1fr;
-  gap: 14px;
-  align-items:start;
-}
-@media (max-width: 980px){
-  .shell{ width: calc(100% - 24px); margin-top: 18px; }
-  .grid2{ grid-template-columns: 1fr; }
+.brand, .titleblock{
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
-/* Cards */
-.card{
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
-  border: 1px solid var(--stroke);
-  border-radius: var(--r2);
-  box-shadow: var(--shadow2);
+.brand__title, .title, h1{
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: .2px;
+  font-weight: 700;
+  color: var(--t-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand__subtitle, .subtitle{
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--t-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* compact volume control right side */
+.volume, .audio, .sound, .volume-control{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 10px 25px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.volume label, .volume .label, .volume-control .label{
+  font-size: 12px;
+  color: var(--t-3);
+}
+
+input[type="range"]{
+  -webkit-appearance: none;
+  width: 160px;
+  height: 18px;
+  background: transparent;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-runnable-track{
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(124,92,255,.9), rgba(45,226,230,.85));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.35),
+    0 0 0 6px rgba(124,92,255,.20);
+  border: 1px solid rgba(255,255,255,.35);
+  transition: transform 140ms var(--e);
+}
+input[type="range"]:active::-webkit-slider-thumb{ transform: scale(1.06); }
+
+input[type="range"]::-moz-range-track{
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(90deg, rgba(124,92,255,.9), rgba(45,226,230,.85));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+input[type="range"]::-moz-range-thumb{
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(255,255,255,.35);
+  box-shadow: 0 10px 20px rgba(0,0,0,.35), 0 0 0 6px rgba(124,92,255,.20);
+}
+
+/* ---------- Premium progress bar ---------- */
+.progress, .progress-wrap{
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.09);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+}
+
+.progress__row, .progress-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.progress__label, .progress-label{
+  font-size: 12.5px;
+  color: var(--t-2);
+  font-weight: 600;
+}
+.progress__meta, .progress-meta{
+  font-size: 12px;
+  color: var(--t-3);
+}
+
+.progress__bar, .bar, .progressbar{
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* if your JS sets width on .progress__fill / .fill — it will glow */
+.progress__fill, .fill, .progressbar > span{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(45,226,230,.90), rgba(255,77,141,.75));
+  box-shadow: 0 10px 28px rgba(124,92,255,.25);
+  position: relative;
+  transition: width 420ms var(--e);
+}
+.progress__fill::after, .fill::after, .progressbar > span::after{
+  content:"";
+  position: absolute;
+  inset: -40% -25%;
+  background:
+    radial-gradient(260px 40px at 30% 50%, rgba(255,255,255,.35), transparent 70%),
+    linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+  transform: translateX(-35%);
+  animation: shimmer 2.4s var(--e) infinite;
+  opacity: .55;
+}
+@keyframes shimmer{
+  0%{ transform: translateX(-55%); }
+  60%{ transform: translateX(55%); }
+  100%{ transform: translateX(55%); }
+}
+
+/* ---------- Main grid ---------- */
+.grid, .layout, .content{
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1.6fr .9fr;
+  gap: var(--gap);
+  align-items: start;
+}
+
+/* mobile stack */
+@media (max-width: 900px){
+  .grid, .layout, .content{
+    grid-template-columns: 1fr;
+  }
+  input[type="range"]{ width: 140px; }
+}
+
+/* ---------- Glass cards ---------- */
+.card, .panel, .box, .screen, section, article{
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow-1), var(--shadow-in);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
-.pad{ padding: 18px; }
-.pad-lg{ padding: 22px; }
 
-.topbar{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 14px;
-}
+.card{ padding: var(--pad); }
+.panel{ padding: var(--pad); }
+.box{ padding: var(--pad); }
 
-.brandTitle{
-  font-weight:950;
-  font-size: 18px;
-  letter-spacing:.2px;
-}
-.brandSub{
-  margin-top:6px;
-  color: var(--muted);
-  line-height:1.5;
-}
-
-.h1{
-  font-size: 34px;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin: 0 0 6px;
-  font-weight: 950;
-}
-
-.sep{
-  border:none;
-  height:1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
-  margin: 16px 0;
-}
-
-/* Pills */
-.pills{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-top: 12px;
-}
-.pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.20);
-  border: 1px solid var(--stroke);
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-/* Progress bar (no text) */
-.progressBar{
-  height: 12px;
-  border-radius: 999px;
-  position: relative;
-  overflow: hidden;
-
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    inset 0 -8px 18px rgba(0,0,0,.35),
-    0 10px 30px rgba(0,0,0,.22);
-}
-
-.progressBar::after{
+/* subtle top highlight line */
+.card::before, .panel::before, .box::before, .screen::before{
   content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  /* лёгкая “пыль/текстура” */
-  background: radial-gradient(120px 60px at 20% 30%, rgba(255,255,255,.06), transparent 60%),
-              radial-gradient(160px 80px at 70% 70%, rgba(255,255,255,.04), transparent 60%);
-  opacity:.55;
-  mix-blend-mode: screen;
-}
-
-.progressFill{
-  height:100%;
-  width:0%;
+  display:block;
+  height: 1px;
+  width: 100%;
   border-radius: 999px;
-  position: relative;
-  overflow: hidden;
-
-  /* “живой” градиент */
-  background: linear-gradient(
-    90deg,
-    rgba(96,165,250,.95),
-    rgba(167,139,250,.95),
-    rgba(45,212,191,.95),
-    rgba(96,165,250,.95)
-  );
-  background-size: 220% 100%;
-  animation: progressShift 6s linear infinite;
-
-  box-shadow:
-    0 0 22px rgba(96,165,250,.22),
-    0 0 50px rgba(167,139,250,.12);
-
-  transition: width .55s cubic-bezier(.2,.9,.2,1);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+  opacity: .55;
+  margin-bottom: 14px;
 }
 
-/* блик, который “едет” по заполненной части */
-.progressFill::after{
-  content:"";
-  position:absolute;
-  inset:-30% -20%;
-  pointer-events:none;
-  background: linear-gradient(
-    110deg,
-    transparent 0%,
-    rgba(255,255,255,.18) 35%,
-    rgba(255,255,255,.06) 45%,
-    transparent 60%
-  );
-  transform: translateX(-40%) rotate(8deg);
-  animation: progressShine 2.4s ease-in-out infinite;
-  opacity:.9;
-}
-
-@keyframes progressShift{
-  0%   { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
-}
-
-@keyframes progressShine{
-  0%   { transform: translateX(-55%) rotate(8deg); opacity:.0; }
-  20%  { opacity:.65; }
-  55%  { opacity:.35; }
-  100% { transform: translateX(55%) rotate(8deg); opacity:.0; }
-}
-
-@media (prefers-reduced-motion: reduce){
-  .progressFill{ animation:none; }
-  .progressFill::after{ animation:none; opacity:.15; }
-}
-/* ===== Progress: wow pulse feedback ===== */
-
-.progressFill{
-  transition: width 520ms cubic-bezier(.2,.8,.2,1);
-  will-change: width, filter, box-shadow, transform;
-}
-
-.progressFill.pulseOk{
-  animation: progPulseOk .55s ease-out;
-}
-
-.progressFill.pulseBad{
-  animation: progPulseBad .55s ease-out;
-}
-
-.progressBar.barPulse{
-  animation: barGlow .55s ease-out;
-}
-
-@keyframes progPulseOk{
-  0%   { filter: brightness(1); transform: scaleY(1); box-shadow: 0 0 0 rgba(120,210,255,0); }
-  35%  { filter: brightness(1.35); transform: scaleY(1.25); box-shadow: 0 0 22px rgba(120,210,255,.35); }
-  100% { filter: brightness(1); transform: scaleY(1); box-shadow: 0 0 0 rgba(120,210,255,0); }
-}
-
-@keyframes progPulseBad{
-  0%   { filter: brightness(1); transform: scaleY(1); box-shadow: 0 0 0 rgba(255,90,90,0); }
-  35%  { filter: brightness(1.15); transform: scaleY(1.18); box-shadow: 0 0 18px rgba(255,90,90,.28); }
-  100% { filter: brightness(1); transform: scaleY(1); box-shadow: 0 0 0 rgba(255,90,90,0); }
-}
-
-@keyframes barGlow{
-  0%   { box-shadow: 0 0 0 rgba(255,255,255,0); }
-  45%  { box-shadow: 0 0 26px rgba(140,200,255,.22); }
-  100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
-}
-
-@media (prefers-reduced-motion: reduce){
-  .progressFill{ transition: none !important; }
-  .progressFill.pulseOk,
-  .progressFill.pulseBad,
-  .progressBar.barPulse{ animation: none !important; }
-}
-
-/* Buttons with cursor glow */
-.btn{
-  position:relative;
-  appearance:none;
-  border:1px solid var(--stroke2);
-  background: rgba(0,0,0,.18);
-  color: var(--text);
-  border-radius: 16px;
-  padding: 12px 14px;
-  font-weight: 800;
-  cursor:pointer;
-  transition: transform .12s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
-  overflow:hidden;
-  outline:none;
-}
-.btn::before{
-  content:"";
-  position:absolute; inset:-1px;
-  background: radial-gradient(240px 180px at var(--bx,50%) var(--by,50%), rgba(170,200,255,.30), transparent 55%);
-  opacity:0;
-  transition: opacity .18s var(--ease);
-  pointer-events:none;
-}
-.btn:hover::before{ opacity:1; }
-.btn:hover{
-  transform: translateY(-1px);
-  background: rgba(255,255,255,.095);
-  border-color: rgba(255,255,255,.22);
-}
-.btn:active{ transform: translateY(0) scale(.99); }
-.btn:focus-visible{ box-shadow: 0 0 0 3px rgba(130,170,255,.22); }
-
-.btn.primary{
-  background: linear-gradient(180deg, rgba(96,140,255,.28), rgba(35,60,170,.18));
-  border-color: rgba(110,150,255,.42);
-}
-.btn.primary::before{
-  background: radial-gradient(240px 180px at var(--bx,50%) var(--by,50%), rgba(255,255,255,.20), transparent 60%);
-}
-
-/* Options */
-.options{
-  display:grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-.optBtn{
-  text-align:left;
-  padding: 14px 14px;
-  border-radius: 18px;
-}
-
-/* Key */
-.keyLine{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 16px;
-  letter-spacing: .14em;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,.22);
-  background: rgba(0,0,0,.18);
-  display:inline-block;
-}
-
-/* Key smooth appear */
-.keyCard{
-  opacity:0;
-  transform: translateY(10px);
-  transition: opacity .35s var(--ease), transform .35s var(--ease);
-}
-.keyCard.is-in{
-  opacity:1;
-  transform: translateY(0);
-}
-
-/* Audio control */
-.audio{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--stroke);
-  background: rgba(0,0,0,.22);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.audioBtn{
-  width:34px; height:34px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  cursor:pointer;
-  transition: transform .12s var(--ease), background .18s var(--ease);
-}
-.audioBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
-.audioRange{ width: 170px; accent-color: rgba(140,170,255,1); }
-.audioPct{ width: 44px; text-align:right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-
-.small{ font-size: 12.5px; color: var(--muted2); }
-
-@media (prefers-reduced-motion: reduce){
-  *{ animation:none !important; transition:none !important; }
-}
-/* =========================
-   WOW: Custom cursor + Magnet buttons
-   ========================= */
-
-/* На тач-устройствах курсор не нужен */
-@media (hover: none), (pointer: coarse) {
-  .cursorDot, .cursorRing { display: none !important; }
-  body { cursor: auto !important; }
-}
-
-/* Прячем стандартный курсор только на ПК */
-@media (hover: hover) and (pointer: fine) {
-  /*body { cursor: none; }
-  .btn, .optBtn, .audioBtn, input[type="range"] { cursor: none; }
-}
-
-/* Кастомный курсор */
-.cursorDot{
-  position: fixed;
-  left: 0; top: 0;
-  width: 8px; height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  transform: translate3d(-50%, -50%, 0);
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: screen;
-  opacity: .95;
-}
-
-.cursorRing{
-  position: fixed;
-  left: 0; top: 0;
-  width: 34px; height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.35);
-  background: radial-gradient(16px 16px at 50% 50%, rgba(120,170,255,.16), transparent 60%);
-  transform: translate3d(-50%, -50%, 0);
-  pointer-events: none;
-  z-index: 9998;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  opacity: .80;
-}
-
-/* Когда навели на кнопку — курсор “активный” */
-.cursorHover .cursorRing{
-  width: 42px; height: 42px;
-  border-color: rgba(180,210,255,.55);
-  background: radial-gradient(18px 18px at 50% 50%, rgba(180,210,255,.22), transparent 62%);
-  opacity: .95;
-}
-.cursorHover .cursorDot{
-  opacity: 1;
-}
-
-/* Магнитный эффект (наводка) */
-.btn, .optBtn, .audioBtn{
-  will-change: transform;
-}
-.magnetActive{
-  transform: translate3d(var(--mxT, 0px), var(--myT, 0px), 0) !important;
-}
-// =========================
-// WOW: Magnetic buttons
-// =========================
-function bindMagnet() {
-  if (!cursorEnabled) return;
-
-  const magnetSelectors = ".btn, .optBtn, .audioBtn";
-  const strength = 0.35;     // сила притяжения
-  const radiusBoost = 18;    // “радиус захвата” вокруг кнопки
-
-  $$(magnetSelectors).forEach((el) => {
-    // чтобы не тянуть range ползунок
-    if (el.matches("input[type='range']")) return;
-
-    let active = false;
-
-    function onMove(e) {
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-
-      // если курсор рядом — магнитим
-      const maxX = (r.width / 2) + radiusBoost;
-      const maxY = (r.height / 2) + radiusBoost;
-
-      const inside = Math.abs(dx) < maxX && Math.abs(dy) < maxY;
-
-      if (!inside) {
-        if (active) {
-          active = false;
-          el.classList.remove("magnetActive");
-          el.style.setProperty("--mxT", "0px");
-          el.style.setProperty("--myT", "0px");
-        }
-        return;
-      }
-
-      active = true;
-      el.classList.add("magnetActive");
-      el.style.setProperty("--mxT", `${dx * strength}px`);
-      el.style.setProperty("--myT", `${dy * strength}px`);
-    }
-
-    function reset() {
-      active = false;
-      el.classList.remove("magnetActive");
-      el.style.setProperty("--mxT", "0px");
-      el.style.setProperty("--myT", "0px");
-    }
-
-    window.addEventListener("mousemove", onMove, { passive: true });
-    el.addEventListener("pointerleave", reset);
-  });
-}
-/* FORCE cursor visible on top */
-.cursorDot,
-.cursorRing{
-  position: fixed !important;
-  left: 0; top: 0;
-  transform: translate3d(-9999px,-9999px,0);
-  pointer-events: none !important;
-  z-index: 999999 !important;
-  opacity: 1 !important;
-  display: block !important;
-  visibility: visible !important;
-  mix-blend-mode: normal !important;
-  filter: none !important;
-}
-
-.cursorDot{
-  width: 8px; height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.9);
-  box-shadow: 0 0 18px rgba(255,255,255,.35);
-}
-
-.cursorRing{
-  width: 42px; height: 42px;
-  margin-left: -21px;
-  margin-top: -21px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.35);
-  box-shadow: 0 0 30px rgba(160,120,255,.15);
-}
-/* =========================
-   WOW UI pack (toasts + buttons + microinteractions)
-   ========================= */
-
-:root{
-  --glass-bg: rgba(20, 24, 34, .55);
-  --glass-bd: rgba(255,255,255,.10);
-  --shadow: 0 20px 70px rgba(0,0,0,.45);
-  --ok: 120 80% 55%;
-  --bad: 0 85% 60%;
-  --txt: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.70);
-}
-
-/* smooth appearance for cards/sections */
-.card, .panel, .box, .screen, .section, #app > *{
-  animation: fadeUp .55s cubic-bezier(.2,.9,.2,1) both;
-}
-@keyframes fadeUp{
-  from{ opacity:0; transform: translateY(14px); filter: blur(6px); }
-  to{ opacity:1; transform: translateY(0); filter: blur(0); }
-}
-
-/* ---------- Buttons: premium ---------- */
-.btn, button, .option, .answer, .choice {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--glass-bd);
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-  color: var(--txt);
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  transform: translateZ(0);
-  transition:
-    transform .18s cubic-bezier(.2,.9,.2,1),
-    box-shadow .18s cubic-bezier(.2,.9,.2,1),
-    border-color .18s ease,
-    background .18s ease,
-    filter .18s ease;
-  will-change: transform, box-shadow;
-}
-
-.btn:hover, button:hover, .option:hover, .answer:hover, .choice:hover{
-  transform: translateY(-2px);
-  border-color: rgba(255,255,255,.18);
-  box-shadow: 0 18px 55px rgba(0,0,0,.35);
-  filter: brightness(1.04);
-}
-
-.btn:active, button:active, .option:active, .answer:active, .choice:active{
-  transform: translateY(0px) scale(.99);
-  box-shadow: 0 10px 28px rgba(0,0,0,.25);
-}
-
-.btn:focus-visible, button:focus-visible, .option:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(120, 170, 255, .22), 0 18px 55px rgba(0,0,0,.35);
-}
-
-/* cursor glow overlay (driven by JS via --mx/--my) */
-.btn::before, button::before, .option::before, .answer::before, .choice::before{
-  content:"";
-  position:absolute; inset:-1px;
-  background: radial-gradient(140px 140px at var(--mx, 50%) var(--my, 50%),
-    rgba(130, 200, 255, .18),
-    rgba(160, 120, 255, .10),
-    transparent 60%);
-  opacity:0;
-  transition: opacity .18s ease;
-  pointer-events:none;
-}
-.btn:hover::before, button:hover::before, .option:hover::before, .answer:hover::before, .choice:hover::before{
-  opacity:1;
-}
-
-/* ripple */
-.ripple{
-  position:absolute;
-  border-radius:999px;
-  transform: translate(-50%,-50%) scale(0);
-  pointer-events:none;
-  width: 14px; height: 14px;
-  background: radial-gradient(circle, rgba(255,255,255,.55), rgba(255,255,255,0) 70%);
-  animation: rip .55s ease-out forwards;
-}
-@keyframes rip{
-  to{ transform: translate(-50%,-50%) scale(18); opacity:0; }
-}
-
-/* ---------- Toasts ---------- */
-.toast-wrap{
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: grid;
-  gap: 10px;
-  z-index: 9999;
-  pointer-events: none;
-}
-
-.toast{
-  pointer-events: auto;
-  min-width: 280px;
-  max-width: min(620px, calc(100vw - 24px));
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: linear-gradient(180deg, rgba(20,24,34,.65), rgba(10,12,18,.55));
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(14px);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  color: var(--txt);
-  overflow: hidden;
-  transform: translateY(-12px) scale(.98);
-  opacity: 0;
-  animation: toastIn .35s cubic-bezier(.2,.9,.2,1) forwards;
-}
-
-@keyframes toastIn{
-  to{ transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes toastOut{
-  to{ transform: translateY(-10px) scale(.98); opacity: 0; }
-}
-
-.toast .ico{
-  width: 28px; height: 28px;
-  display:grid; place-items:center;
-  border-radius: 10px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.10);
-}
-
-.toast .txt{
-  font-weight: 650;
+/* ---------- Typography ---------- */
+h2, .h2{
+  margin: 0 0 10px;
+  font-size: 20px;
   letter-spacing: .2px;
+  font-weight: 750;
+  color: var(--t-1);
 }
-.toast .sub{
-  color: var(--muted);
-  font-size: 13px;
-  margin-top: 2px;
+h3, .h3{
+  margin: 0 0 10px;
+  font-size: 16px;
+  letter-spacing: .15px;
+  font-weight: 700;
+  color: var(--t-1);
+}
+p, .text, .desc, .description{
+  margin: 0 0 12px;
+  color: var(--t-2);
+  line-height: 1.55;
+  font-size: 14px;
+}
+small, .muted{
+  color: var(--t-3);
 }
 
-.toast .x{
-  width: 34px; height: 34px;
-  display:grid; place-items:center;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  color: var(--txt);
-  cursor: pointer;
-  transition: transform .15s ease, background .15s ease;
+/* Ensure task description is visually on top */
+.task-desc, .level-desc, .question, .prompt{
+  margin-bottom: 16px;
 }
-.toast .x:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
 
-.toast::after{
-  content:"";
-  position:absolute; left:0; bottom:0;
-  height: 3px;
+/* ---------- Inputs ---------- */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea{
   width: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,.0), rgba(255,255,255,.35), rgba(255,255,255,.0));
-  opacity:.45;
-}
-
-/* variants */
-.toast.ok{ border-color: rgba(80,255,170,.18); }
-.toast.ok .ico{ box-shadow: 0 0 0 3px rgba(80,255,170,.12); }
-.toast.bad{ border-color: rgba(255,90,90,.20); }
-.toast.bad .ico{ box-shadow: 0 0 0 3px rgba(255,90,90,.12); }
-
-/* subtle shake for wrong answer */
-.shake{
-  animation: shake .35s ease;
-}
-@keyframes shake{
-  0%,100%{ transform: translateX(0); }
-  20%{ transform: translateX(-6px); }
-  40%{ transform: translateX(6px); }
-  60%{ transform: translateX(-4px); }
-  80%{ transform: translateX(4px); }
-}
-/* ===== Screen transitions (fade+slide) ===== */
-#app { position: relative; }
-#app .screen {
-  animation: screenIn .55s cubic-bezier(.2,.9,.2,1) both;
-  transform-origin: 50% 20%;
-}
-@keyframes screenIn{
-  from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(8px); }
-  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
-
-/* ===== Card parallax hover ===== */
-.card, .panel, .box, .section {
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition: transform .18s cubic-bezier(.2,.9,.2,1);
-}
-.card::after, .panel::after, .box::after, .section::after{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  border-radius: inherit;
-  pointer-events:none;
-  background: radial-gradient(240px 200px at var(--mx,50%) var(--my,50%),
-    rgba(120,170,255,.12),
-    rgba(180,120,255,.08),
-    transparent 60%);
-  opacity: 0;
-  transition: opacity .18s ease;
-}
-.card:hover::after, .panel:hover::after, .box:hover::after, .section:hover::after { opacity: 1; }
-
-/* ===== Better wrong-answer text (if it exists) ===== */
-.msg, .message, .status, #msg, #message {
-  padding: 10px 12px;
   border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,.25);
   border: 1px solid rgba(255,255,255,.12);
-  background: rgba(15,18,26,.45);
-  backdrop-filter: blur(14px);
-  color: rgba(255,255,255,.92);
-}
-
-/* Smooth show/hide */
-.is-hidden { display:none !important; }
-/* ===== Answer buttons (optBtn) premium ===== */
-.optBtn{
-  width: 100%;
-  text-align: left;
-  position: relative;
-  overflow: hidden;
-  border-radius: 18px;
-  padding: 16px 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(18,22,34,.42);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 12px 40px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.08);
-
-  transform: translateZ(0);
-  transition:
-    transform .18s cubic-bezier(.2,.9,.2,1),
-    border-color .18s ease,
-    background .18s ease,
-    box-shadow .18s ease;
-}
-
-/* hover glow follows cursor via --mx/--my from JS */
-.optBtn::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius: inherit;
-  pointer-events:none;
-  background: radial-gradient(260px 180px at var(--mx,50%) var(--my,50%),
-    rgba(120,170,255,.22),
-    rgba(180,120,255,.16),
-    transparent 60%);
-  opacity: 0;
-  transition: opacity .18s ease;
-}
-
-.optBtn:hover{
-  transform: translateY(-1px) scale(1.01);
-  border-color: rgba(255,255,255,.18);
-  background: rgba(22,28,44,.48);
-  box-shadow:
-    0 18px 55px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.10);
-}
-.optBtn:hover::before{ opacity: 1; }
-
-.optBtn:active{
-  transform: translateY(0px) scale(.995);
-  transition-duration: .06s;
-}
-
-/* Keyboard focus */
-.optBtn:focus-visible{
   outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  color: var(--t-1);
+  transition: border-color 160ms var(--e), transform 160ms var(--e), box-shadow 160ms var(--e);
+}
+textarea{ min-height: 110px; resize: vertical; }
+
+input::placeholder, textarea::placeholder{ color: rgba(255,255,255,.40); }
+
+input:focus, textarea:focus{
+  border-color: rgba(124,92,255,.55);
   box-shadow:
-    0 0 0 2px rgba(140,190,255,.35),
-    0 18px 55px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.10);
-}
-
-/* Ripple */
-.optBtn .ripple{
-  position:absolute;
-  width: 12px;
-  height: 12px;
-  margin-left:-6px;
-  margin-top:-6px;
-  border-radius: 999px;
-  pointer-events:none;
-  background: rgba(255,255,255,.35);
-  transform: scale(0);
-  animation: ripple .55s ease-out forwards;
-  filter: blur(.2px);
-}
-@keyframes ripple{
-  to { transform: scale(35); opacity: 0; }
-}
-/* =========================
-   WOW LAYER PATCH (append)
-   ========================= */
-
-/* экранная анимация (если app.js оборачивает в .screen) */
-.screen{
-  opacity: 0;
-  transform: translateY(10px) scale(.995);
-  filter: blur(2px);
-  transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), filter .45s ease;
-  will-change: opacity, transform, filter;
-}
-.screen.is-in{
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-
-/* общий “премиум” для карточек */
-.card{
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.08);
-  background: rgba(10,12,18,.46);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow:
-    0 12px 40px rgba(0,0,0,.45),
+    0 0 0 4px rgba(124,92,255,.14),
     inset 0 1px 0 rgba(255,255,255,.06);
 }
 
-/* мягкая подсветка за мышкой (работает из-за --mx/--my) */
-.card::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  opacity:.0;
-  transition: opacity .25s ease;
-  background:
-    radial-gradient(500px circle at var(--mx,50%) var(--my,50%),
-      rgba(120,180,255,.22),
-      rgba(140,90,255,.12) 40%,
-      rgba(0,0,0,0) 70%);
-  mix-blend-mode: screen;
-}
-.card:hover::before{ opacity: 1; }
-
-/* тонкая “внутренняя” текстура */
-.card::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  opacity:.22;
-  background:
-    radial-gradient(1200px circle at 20% 0%,
-      rgba(255,255,255,.12),
-      rgba(255,255,255,0) 60%);
+/* ---------- Buttons ---------- */
+button, .btn, .button{
+  border: 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.06);
+  color: var(--t-1);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  transition: transform 140ms var(--e), box-shadow 180ms var(--e), border-color 180ms var(--e), background 180ms var(--e);
 }
 
-/* ====== KEY CARD: делаем заметно красивее ====== */
-.keyCard{
-  border-color: rgba(255,255,255,.12);
-  box-shadow:
-    0 18px 70px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.08);
-}
-.keyCard::before{
-  /* более яркий glow только на ключе */
-  opacity: .85;
-  background:
-    radial-gradient(560px circle at var(--mx,50%) var(--my,50%),
-      rgba(255, 200, 120, .22),
-      rgba(120, 160, 255, .18) 35%,
-      rgba(150, 90, 255, .14) 55%,
-      rgba(0,0,0,0) 75%);
-}
-.keyCard:hover::before{ opacity: 1; }
-
-/* “шильдик” ключа (если есть внутри элементы, но даже без — не мешает) */
-.keyCard .muted{ opacity:.85; }
-
-/* ====== кнопки-ответы: приятный hover + click ====== */
-.optBtn{
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.08);
-  background: rgba(12,14,20,.42);
-  box-shadow:
-    0 10px 26px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.05);
-  transition: transform .16s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
-}
-.optBtn:hover{
+button:hover, .btn:hover, .button:hover{
   transform: translateY(-1px);
-  border-color: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.18);
   box-shadow:
-    0 14px 34px rgba(0,0,0,.45),
+    0 22px 55px rgba(0,0,0,.42),
+    0 0 0 6px rgba(45,226,230,.07),
     inset 0 1px 0 rgba(255,255,255,.07);
 }
-.optBtn:active{ transform: translateY(0); }
 
-/* glow на кнопке по курсору */
-.optBtn::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  opacity:.0;
-  transition: opacity .22s ease;
-  background:
-    radial-gradient(340px circle at var(--bx,50%) var(--by,50%),
-      rgba(120,180,255,.18),
-      rgba(160,90,255,.12) 45%,
-      rgba(0,0,0,0) 70%);
-  mix-blend-mode: screen;
-}
-.optBtn:hover::before{ opacity: 1; }
-
-/* фикс для сообщений “Неверно…” чтобы выглядело мягко */
-.toast, .msg, .hintBox, .errorBox{
-  border: 1px solid rgba(255,255,255,.10) !important;
-  background: rgba(10,12,18,.55) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 14px 50px rgba(0,0,0,.5);
-}
-.fadeIn { animation: fadeInUp .35s ease both; }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+button:active, .btn:active, .button:active{
+  transform: translateY(0px) scale(.99);
+  box-shadow: 0 16px 38px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
 }
 
-
-/* ===== Screen transitions (fade + slide) ===== */
-#app{ position: relative; }
-.screenLayer{
-  position:absolute;
-  inset:0;
-  will-change: transform, opacity, filter;
+.btn-primary, button.primary, .primary{
+  background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(45,226,230,.85));
+  border-color: rgba(255,255,255,.16);
+  box-shadow:
+    0 24px 55px rgba(124,92,255,.20),
+    0 18px 45px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.10);
 }
-.screenLayer.is-enter{
-  opacity:0;
-  transform: translateY(14px) scale(.992);
-  filter: blur(6px);
-}
-.screenLayer.is-enter-active{
-  opacity:1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-  transition: opacity .42s ease, transform .42s cubic-bezier(.2,.8,.2,1), filter .42s ease;
-}
-.screenLayer.is-exit{
-  opacity:1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-.screenLayer.is-exit-active{
-  opacity:0;
-  transform: translateY(-10px) scale(.992);
-  filter: blur(6px);
-  pointer-events:none;
-  transition: opacity .32s ease, transform .32s ease, filter .32s ease;
+.btn-primary:hover, button.primary:hover, .primary:hover{
+  box-shadow:
+    0 26px 70px rgba(124,92,255,.24),
+    0 0 0 7px rgba(124,92,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.11);
 }
 
-/* when only one layer exists (first render), we don't want absolute to collapse height */
-#app > .screenLayer:only-child{ position: relative; }
-.videoWrap{
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  background: rgba(0,0,0,.55);
-  border: 1px solid rgba(255,255,255,.08);
+.btn-danger, .danger{
+  background: rgba(255,77,141,.16);
+  border-color: rgba(255,77,141,.30);
 }
 
-#lvlVideo{
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.videoStart{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-weight: 900;
-  font-size: 18px;
-  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65));
-  border: 0;
-}
-
-.options.is-hidden{ display:none; }
-
-.fade-in{
-  animation: fadeInUp .25s ease-out both;
-}
-
-@keyframes fadeInUp{
-  from{ opacity:0; transform: translateY(8px); }
-  to{ opacity:1; transform: translateY(0); }
-}
-.videoWrap{position:relative;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 18px 60px rgba(0,0,0,.45)}
-.video{display:block;width:100%;height:auto;background:#000}
-.videoStartBtn{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:18px;letter-spacing:.2px;
-  background:linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.55));
-  border:0;border-radius:16px;color:#fff;cursor:pointer;
-  transition:opacity .25s ease, transform .25s ease;
-}
-.videoStartBtn:hover{transform:scale(1.01)}
-.videoStartBtn.hide{opacity:0;pointer-events:none}
-/* ===== Premium motion ===== */
-:root{
-  --ease-out: cubic-bezier(.2,.8,.2,1);
-  --ease-spring: cubic-bezier(.2,1,.2,1);
-}
-
-.screen{
-  opacity: 0;
-  transform: translateY(10px) scale(.99);
-  filter: blur(6px);
-  transition: opacity .55s var(--ease-out), transform .55s var(--ease-out), filter .55s var(--ease-out);
-  will-change: opacity, transform, filter;
-}
-.screen.show{
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-
-.card{
-  transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .35s var(--ease-out);
-  will-change: transform;
-}
-.card:hover{
-  box-shadow: 0 24px 80px rgba(0,0,0,.45);
+.btn-ghost, .ghost{
+  background: transparent;
   border-color: rgba(255,255,255,.12);
 }
-/* ===== Premium buttons ===== */
-.btn, .optBtn, .pill{
-  position: relative;
-  overflow: hidden;
+
+/* Button groups / answer options */
+.options, .answers, .choices{
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+@media (min-width: 901px){
+  .options.cols-2, .answers.cols-2, .choices.cols-2{ grid-template-columns: 1fr 1fr; }
 }
 
-.btn::before, .optBtn::before{
-  content:"";
-  position:absolute; inset:-2px;
-  background: radial-gradient(600px circle at var(--bx,50%) var(--by,50%),
-    rgba(140,190,255,.22), rgba(160,120,255,.14) 35%, rgba(0,0,0,0) 70%);
-  opacity: 0;
-  transition: opacity .25s var(--ease-out);
-  pointer-events:none;
+/* ---------- Key card (right on desktop, bottom on mobile) ---------- */
+.key, .keycard, .key-card, aside{
+  padding: var(--pad);
 }
 
-.btn:hover::before, .optBtn:hover::before{ opacity: 1; }
-
-.btn:active, .optBtn:active{
-  transform: translateY(1px) scale(.995);
-}
-
-.optBtn{
-  transition: transform .25s var(--ease-out), background .25s var(--ease-out), border-color .25s var(--ease-out);
-}
-.optBtn:hover{
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.14);
-}
-
-/* красивый “правильный” */
-.optBtn.ok{
-  border-color: rgba(120,255,180,.35) !important;
-  box-shadow: 0 14px 40px rgba(80,255,170,.12);
-}
-
-/* shake уже есть — сделаем мягче */
-.shake{ animation: shake .42s var(--ease-spring); }
-@keyframes shake{
-  0%{ transform: translateX(0) }
-  20%{ transform: translateX(-6px) }
-  40%{ transform: translateX(6px) }
-  60%{ transform: translateX(-4px) }
-  80%{ transform: translateX(4px) }
-  100%{ transform: translateX(0) }
-}
-/* ===== Message pill ===== */
-.msg{
-  display:inline-flex;
+.key__title, .key-title{
+  display:flex;
   align-items:center;
-  gap:10px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.22);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transform: translateY(6px);
-  opacity: .0;
-  transition: opacity .25s var(--ease-out), transform .25s var(--ease-out);
+  justify-content:space-between;
+  gap: 10px;
+  margin: 0 0 10px;
 }
-.msg:not(:empty){
+
+.key__value, .key-value, .keycode{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  letter-spacing: .25em;
+  font-weight: 800;
+  font-size: 18px;
+  color: rgba(255,255,255,.88);
+  padding: 14px 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  overflow-wrap: anywhere;
+}
+
+.key__hint, .key-hint{
+  margin-top: 10px;
+  color: var(--t-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ---------- Video level card ---------- */
+.video-wrap, .video-card, .video-level, .player{
+  padding: var(--pad);
+}
+
+video{
+  width: 100%;
+  border-radius: 18px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 22px 60px rgba(0,0,0,.55);
+  outline: none;
+}
+
+/* Nice “frame” around embedded player */
+.video-frame{
+  border-radius: 22px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 26px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.video-frame video{ border-radius: 16px; }
+
+/* ---------- Screen transitions (fade + slide) ---------- */
+/*
+  Recommended: put current level content inside an element with class .screen (or add it).
+  When switching, toggle:
+  - add .is-leaving to current screen
+  - add .is-entering to next screen (remove after render)
+*/
+.screen{
+  will-change: transform, opacity, filter;
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0px);
+  transition:
+    opacity var(--fade) var(--e),
+    transform var(--slide) var(--e),
+    filter var(--fade) var(--e);
+}
+
+.screen.is-leaving{
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.screen.is-entering{
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(7px);
+}
+
+.screen.is-entering.is-ready{
   opacity: 1;
   transform: translateY(0);
+  filter: blur(0);
 }
 
-/* если хочешь разный цвет — просто добавим классы позже */
-/* ===== Video premium ===== */
-.videoWrap{
-  position: relative;
-  border-radius: 18px;
-  overflow: hidden;
-  background: #000;
-  box-shadow: 0 30px 120px rgba(0,0,0,.55);
-  border: 1px solid rgba(255,255,255,.10);
+/* ---------- Inline toasts / errors ---------- */
+.error, .wrong, .alert-error{
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,77,141,.12);
+  border: 1px solid rgba(255,77,141,.28);
+  color: rgba(255,255,255,.86);
 }
 
-.video{
-  display:block;
-  width:100%;
-  height:auto;
-  background:#000;
-  transform: scale(1.001);
+.success, .ok, .alert-ok{
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(45,226,230,.10);
+  border: 1px solid rgba(45,226,230,.22);
+  color: rgba(255,255,255,.86);
 }
 
-/* затемнение/виньетка поверх видео */
-.videoWrap::after{
-  content:"";
-  position:absolute; inset:0;
-  background:
-    radial-gradient(1200px 500px at 50% 120%, rgba(160,120,255,.20), transparent 60%),
-    radial-gradient(700px 300px at 20% 0%, rgba(140,190,255,.14), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.35));
-  pointer-events:none;
+/* ---------- Footer-ish small text ---------- */
+.footer, .note{
+  margin-top: 14px;
+  color: var(--t-3);
+  font-size: 12px;
 }
 
-/* кнопка “▶ Смотреть” */
-.videoStartBtn{
-  position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center;
-  font-weight:900; letter-spacing:.2px;
-  border:0; color:#fff; cursor:pointer;
-  background: linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.55));
-  border-radius: 18px;
-  transition: opacity .25s var(--ease-out), transform .25s var(--ease-out);
-}
-.videoStartBtn:hover{ transform: scale(1.01); }
-.videoStartBtn.hide{ opacity:0; pointer-events:none; }
-/* ===== Audio slider premium ===== */
-.audioRange{
-  height: 6px !important;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(140,190,255,.55), rgba(160,120,255,.55));
-  outline: none;
-  opacity: .95;
-}
-
-.audioRange::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  border: 1px solid rgba(0,0,0,.15);
-}
-.audioRange::-moz-range-thumb{
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  border: 1px solid rgba(0,0,0,.15);
-}
-// ===== WOW buttons: cursor shine + tilt (delegation) =====
-(function initButtonWow(){
-  const SELECTOR = ".btn, .optBtn, .option, .answer, .choice";
-
-  function setVars(el, clientX, clientY){
-    const r = el.getBoundingClientRect();
-    const mx = ((clientX - r.left) / r.width) * 100;
-    const my = ((clientY - r.top) / r.height) * 100;
-    el.style.setProperty("--mx", mx.toFixed(2) + "%");
-    el.style.setProperty("--my", my.toFixed(2) + "%");
-  }
-
-  function setTilt(el, clientX, clientY){
-    const r = el.getBoundingClientRect();
-    const dx = (clientX - (r.left + r.width/2)) / (r.width/2);
-    const dy = (clientY - (r.top + r.height/2)) / (r.height/2);
-    const rotY = dx * 5;      // сила наклона
-    const rotX = -dy * 4;
-    el.style.transform = `translateY(-1px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
-  }
-
-  document.addEventListener("pointermove", (e) => {
-    const el = e.target.closest?.(SELECTOR);
-    if (!el) return;
-    setVars(el, e.clientX, e.clientY);
-    setTilt(el, e.clientX, e.clientY);
-  }, { passive: true });
-
-  document.addEventListener("pointerleave", (e) => {
-    const el = e.target.closest?.(SELECTOR);
-    if (!el) return;
-    el.style.transform = "";
-  }, true);
-
-  // когда курсор уходит с элемента — вернуть transform
-  document.addEventListener("pointerout", (e) => {
-    const el = e.target.closest?.(SELECTOR);
-    if (!el) return;
-    // если ушли именно с него (а не на его детей)
-    if (e.relatedTarget && el.contains(e.relatedTarget)) return;
-    el.style.transform = "";
-  }, true);
-})();
-/* ===== Feedback (correct / wrong) ===== */
-
-/* универсальные */
-.optBtn.is-correct,
-.btn.is-correct{
-  border-color: rgba(120,255,180,.35) !important;
-  box-shadow:
-    0 18px 60px rgba(80,255,170,.14),
-    0 0 26px rgba(80,255,170,.12),
-    inset 0 1px 0 rgba(255,255,255,.12);
-  background: linear-gradient(180deg, rgba(120,255,180,.10), rgba(255,255,255,.04));
-}
-
-.optBtn.is-wrong,
-.btn.is-wrong{
-  border-color: rgba(255,90,120,.32) !important;
-  box-shadow:
-    0 18px 60px rgba(255,90,120,.12),
-    0 0 24px rgba(255,90,120,.10),
-    inset 0 1px 0 rgba(255,255,255,.10);
-  background: linear-gradient(180deg, rgba(255,90,120,.08), rgba(255,255,255,.04));
-}
-
-/* иконка/кольцо поверх (очень “app-like”) */
-.optBtn.is-correct::after,
-.optBtn.is-wrong::after{
-  content:"";
-  position:absolute;
-  inset:8px;
-  border-radius: calc(var(--btn-radius, 16px) - 8px);
-  pointer-events:none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  opacity:.85;
-}
-.optBtn.is-correct::after{
-  box-shadow:
-    inset 0 0 0 1px rgba(120,255,180,.30),
-    0 0 0 1px rgba(120,255,180,.12);
-}
-.optBtn.is-wrong::after{
-  box-shadow:
-    inset 0 0 0 1px rgba(255,90,120,.28),
-    0 0 0 1px rgba(255,90,120,.10);
-}
-
-/* микро-анимации */
-.optBtn.pop{
-  animation: popOk 320ms cubic-bezier(.2,.9,.2,1);
-}
-@keyframes popOk{
-  0%{ transform: translateY(0) scale(1); }
-  45%{ transform: translateY(-2px) scale(1.012); }
-  100%{ transform: translateY(0) scale(1); }
-}
-
-.optBtn.shakeHard{
-  animation: shakeHard 420ms cubic-bezier(.2,.9,.2,1);
-}
-@keyframes shakeHard{
-  0%{ transform: translateX(0); }
-  20%{ transform: translateX(-8px); }
-  40%{ transform: translateX(8px); }
-  60%{ transform: translateX(-6px); }
-  80%{ transform: translateX(6px); }
-  100%{ transform: translateX(0); }
-}
-
-/* когда ответ верный — остальные чуть тусклеют */
-.options.dimOthers .optBtn:not(.is-correct){
-  opacity: .55;
-  transform: none !important;
-  filter: saturate(.9);
-}
-
-/* Reduce motion */
+/* ---------- Accessibility: reduced motion ---------- */
 @media (prefers-reduced-motion: reduce){
-  .optBtn.pop,
-  .optBtn.shakeHard{ animation: none !important; }
-}
-/* ===== Premium Pack: background + cards + typography ===== */
-
-/* 1) Background: awwwards vibe */
-body{
-  background:
-    radial-gradient(1200px 900px at var(--px,50%) var(--py,35%), rgba(123,92,255,.22), transparent 60%),
-    radial-gradient(1100px 850px at calc(var(--px,50%) - 18%) calc(var(--py,35%) + 18%), rgba(116,184,255,.16), transparent 62%),
-    radial-gradient(900px 700px at calc(var(--px,50%) + 22%) calc(var(--py,35%) + 26%), rgba(56,255,215,.10), transparent 62%),
-    linear-gradient(180deg, #0a0f1d, #070911 65%, #05060b);
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .bg__glow{ opacity: .55; }
 }
 
-/* vignette stronger + softer edges */
-.bg__vignette{
-  opacity: .95 !important;
-  background: radial-gradient(closest-side at 50% 35%, transparent 0 52%, rgba(0,0,0,.86) 100%) !important;
+/* ---------- Small polish: focus rings ---------- */
+:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(124,92,255,.18);
+  border-radius: 12px;
 }
 
-/* noise a bit cleaner */
-.bg__noise{ opacity:.10 !important; }
-
-
-/* 2) Typography: premium */
-.brandTitle{
-  font-size: 18px !important;
-  letter-spacing: -.02em !important;
-}
-.brandSub{
-  font-size: 14px !important;
-  line-height: 1.45 !important;
-  max-width: 64ch !important;
-}
-
-.h1{
-  font-size: 44px !important;
-  font-weight: 950 !important;
-  letter-spacing: -.04em !important;
-  line-height: 1.02 !important;
-}
-.h2{
-  font-size: 30px !important;
-  font-weight: 900 !important;
-  letter-spacing: -.03em !important;
-  line-height: 1.12 !important;
-}
-
-/* question text (важно — делает не “кричащим”) */
-.levelQ, .muted, .msg{
-  font-size: 15px;
-}
-.levelQ{
-  color: rgba(255,255,255,.84) !important;
-  line-height: 1.55 !important;
-}
-
-
-/* 3) Glass cards: specular highlight */
-.card{
-  border-radius: 20px !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.035)) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow:
-    0 26px 80px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.10) !important;
-  backdrop-filter: blur(16px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.15) !important;
-}
-
-/* specular strip */
-.card::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  border-radius: inherit;
-  background:
-    radial-gradient(900px 260px at 10% 0%, rgba(255,255,255,.10), transparent 55%),
-    radial-gradient(900px 260px at 90% 0%, rgba(255,255,255,.06), transparent 55%),
-    radial-gradient(1200px 600px at var(--px,50%) var(--py,35%), rgba(140,190,255,.10), transparent 60%);
-  opacity:.85;
-}
-
-/* inner hairline */
-.card::after{
-  content:"";
-  position:absolute;
-  inset:1px;
-  pointer-events:none;
-  border-radius: calc(20px - 1px);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-  opacity: .9;
-}
-
-
-/* 4) Layout: больше воздуха, меньше “кучи” */
-.pad-lg{ padding: 26px !important; }
-.grid2{ gap: 18px !important; }
-.topbar{ margin-bottom: 16px !important; }
-
-
-/* 5) Options: выглядят как премиум карточки */
-.options{
-  display:flex;
-  flex-direction:column;
-  gap: 12px;
-}
-.optBtn{
-  width:100%;
-  text-align:left;
-  border-radius: 18px !important;
-  padding: 14px 16px !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  background: rgba(255,255,255,.05) !important;
-  box-shadow: 0 14px 40px rgba(0,0,0,.35) !important;
-  transition: transform .18s ease, border-color .18s ease, background .18s ease;
-}
-.optBtn:hover{
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.18) !important;
-  background: rgba(255,255,255,.07) !important;
-}
-
-
-/* 6) Video area: cinema vibe */
-.videoWrap{
-  border-radius: 20px !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-  box-shadow: 0 34px 120px rgba(0,0,0,.62) !important;
-}
-.videoWrap::after{
-  content:"";
-  position:absolute; inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(900px 420px at 50% 120%, rgba(160,120,255,.20), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.35));
-  opacity:.85;
-}
-.videoStartBtn{
-  border-radius: 20px !important;
-  font-size: 18px !important;
-}
-
-
-/* 7) Tiny polish: pills */
-.pill{
-  border-radius: 999px !important;
-  padding: 8px 12px !important;
-  background: rgba(255,255,255,.05) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-}
-
-/* 8) Motion: nicer screen appear */
-.screen{
-  transition: opacity .55s cubic-bezier(.2,.8,.2,1),
-              transform .55s cubic-bezier(.2,.8,.2,1),
-              filter .55s cubic-bezier(.2,.8,.2,1) !important;
+/* ---------- Mobile tightening ---------- */
+@media (max-width: 520px){
+  .container, .app, main{
+    width: min(1180px, calc(100% - 22px));
+    padding: 18px 0 28px;
+  }
+  .topbar, header.topbar, header{
+    padding: 12px 12px;
+  }
+  .card, .panel, .box{ padding: 18px; }
+  .key__value, .key-value, .keycode{ font-size: 16px; letter-spacing: .22em; }
+  input[type="range"]{ width: 120px; }
 }
