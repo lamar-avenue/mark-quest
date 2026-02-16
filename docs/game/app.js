@@ -522,54 +522,12 @@ function markCorrect(btn){
     el.style.setProperty("--my", my.toFixed(2) + "%");
   }, { passive: true });
 
-  // 3) Card tilt (safe)
-  document.addEventListener("pointermove", (e) => {
-    const card = safeClosest(e.target, ".card");
-    if (!card) return;
-    const r = card.getBoundingClientRect();
-    const dx = ((e.clientX - r.left) / r.width) - 0.5;
-    const dy = ((e.clientY - r.top) / r.height) - 0.5;
-    const rx = (-dy * 6).toFixed(2);
-    const ry = (dx * 8).toFixed(2);
-    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-  }, { passive: true });
-
-  document.addEventListener("pointerleave", () => {
-    $$(".card").forEach(c => (c.style.transform = ""));
-  }, true);
-
   // ---------------- Start ----------------
   if (state.levelIndex === 0 && !state.key) {
     renderStart();
   } else {
     render();
   }
-})();
-// Soft cursor aura for background (optional)
-(function(){
-  const root = document.documentElement;
-  let raf = 0, x = 0.5, y = 0.35, tx = x, ty = y;
-
-  function onMove(e){
-    const vw = Math.max(1, window.innerWidth);
-    const vh = Math.max(1, window.innerHeight);
-    tx = e.clientX / vw;
-    ty = e.clientY / vh;
-    if (!raf) raf = requestAnimationFrame(tick);
-  }
-
-  function tick(){
-    raf = 0;
-    // smooth follow
-    x += (tx - x) * 0.08;
-    y += (ty - y) * 0.08;
-    root.style.setProperty('--mx', (x*100).toFixed(2) + '%');
-    root.style.setProperty('--my', (y*100).toFixed(2) + '%');
-    // continue smoothing if still far
-    if (Math.abs(tx-x) + Math.abs(ty-y) > 0.002) raf = requestAnimationFrame(tick);
-  }
-
-  window.addEventListener('pointermove', onMove, { passive: true });
 })();
 // Cursor aura follow (background only). No tilt.
 (() => {

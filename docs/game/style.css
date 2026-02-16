@@ -60,24 +60,18 @@ button, input{ font: inherit; color: inherit; }
   inset:0;
   pointer-events:none;
 
-  /* главный “пятно-градиент” следует за курсором */
   background:
-    radial-gradient(650px 650px at var(--mx) var(--my),
+    radial-gradient(650px 650px at var(--px) var(--py),
       rgba(59,130,246,.22),
       rgba(45,212,191,.12) 40%,
       rgba(168,85,247,.10) 70%,
       transparent 75%
     ),
-
-    /* статичные боковые ауры как в фигме */
     radial-gradient(420px 420px at 12% 25%, rgba(168,85,247,.10), transparent 65%),
     radial-gradient(420px 420px at 88% 70%, rgba(45,212,191,.10), transparent 65%);
 
   filter: blur(120px);
   opacity: .65;
-
-  transform: translate3d(0,0,0);
-  transition: opacity 200ms ease;
 }
 
 /* ---------- PAGE WRAP ---------- */
