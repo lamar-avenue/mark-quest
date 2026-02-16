@@ -940,3 +940,14 @@ function bindMagnet() {
   from{ opacity:0; transform: translateY(8px); }
   to{ opacity:1; transform: translateY(0); }
 }
+.videoWrap{position:relative;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+.video{display:block;width:100%;height:auto;background:#000}
+.videoStartBtn{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;letter-spacing:.2px;
+  background:linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.55));
+  border:0;border-radius:16px;color:#fff;cursor:pointer;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.videoStartBtn:hover{transform:scale(1.01)}
+.videoStartBtn.hide{opacity:0;pointer-events:none}

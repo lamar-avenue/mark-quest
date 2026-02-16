@@ -1,881 +1,506 @@
+/* Mark Quest — app.js
+   Vanilla JS. Reads window.QUIZ_DATA from data.js.
+   Supports:
+   - обычные уровни (вопрос + варианты)
+   - video-уровень: стоп на stopAt, варианты появляются, при верном — видео продолжается, уровень засчитывается по ended.
+*/
 (() => {
   "use strict";
 
   const DATA = window.QUIZ_DATA;
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
-  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const ROOT = document.getElementById("app");
+  if (!ROOT) return;
 
-  if (!DATA?.levels?.length) {
-    document.body.innerHTML = `<div style="padding:18px;color:#fff;font-family:Inter,sans-serif">
-      Ошибка: нет window.QUIZ_DATA.levels в game/data.js
-    </div>`;
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const esc = (s) => String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+  function safeClosest(target, selector) {
+    const el = target && target.nodeType === 1 ? target : (target && target.parentElement ? target.parentElement : null);
+    return el && el.closest ? el.closest(selector) : null;
+  }
+
+  if (!DATA || !Array.isArray(DATA.levels)) {
+    ROOT.innerHTML = `
+      <div class="screen show">
+        <div class="card pad-lg">
+          <div class="h1">Ошибка</div>
+          <div class="muted">Не найден <b>window.QUIZ_DATA</b> или <b>levels</b>.</div>
+          <div class="muted" style="margin-top:10px">Проверь, что <code>game/data.js</code> подключён <b>перед</b> <code>game/app.js</code>.</div>
+        </div>
+      </div>
+    `;
     return;
   }
 
   const TOTAL = DATA.levels.length;
-  const KEY_LEN = Number(DATA.keyLength || TOTAL || 12) || 12;
+  const KEY_LEN = Number.isFinite(DATA.keyLength) ? DATA.keyLength : TOTAL;
 
-  const LS = "markQuestState_premium_v1";
-  const LS_VOL = "markQuestVol_premium_v1";
+  const STORAGE_KEY = "markquest_state_v3";
+  const VOL_KEY = "markquest_volume_v2";
+  const TRACK_KEY = "markquest_track_v2";
 
-  const defaultState = () => ({
-    stage: "start",   // start | quiz | done | final
-    levelIndex: 0,
-    key: ""
-  });
-  function projectBase() {
-  // для https://lamar-avenue.github.io/mark-quest/... вернёт "/mark-quest/"
-  const p = location.pathname.split("/").filter(Boolean);
-  return p.length ? `/${p[0]}/` : "/";
-}
+  /** @type {{levelIndex:number, key:string}} */
+  let state = loadState();
 
-function withBase(rel) {
-  if (!rel) return rel;
-  if (/^(https?:)?\/\//.test(rel)) return rel;   // http(s)://
-  if (rel.startsWith("/")) return rel;           // уже абсолютный
-  return projectBase() + rel.replace(/^\.?\//, "");
-}
+  // ---------------- Music ----------------
+  const music = new Audio();
+  music.loop = true;
+  music.preload = "auto";
 
+  const tracks = Array.isArray(DATA.musicTracks) ? DATA.musicTracks.filter(Boolean) : [];
+  let chosen = localStorage.getItem(TRACK_KEY) || "";
+  if (!chosen && tracks.length) {
+    chosen = tracks[Math.floor(Math.random() * tracks.length)];
+    localStorage.setItem(TRACK_KEY, chosen);
+  }
+  if (chosen) music.src = chosen;
 
-  let state = load();
+  let volume = parseFloat(localStorage.getItem(VOL_KEY) || "0.65");
+  if (!Number.isFinite(volume)) volume = 0.65;
+  volume = clamp(volume, 0, 1);
+  music.volume = volume;
 
-  function load(){
-    try{
-      const s = JSON.parse(localStorage.getItem(LS) || "null");
-      if (!s) return defaultState();
-      return {
-        stage: ["start","quiz","done","final"].includes(s.stage) ? s.stage : "start",
-        levelIndex: clamp(Number(s.levelIndex||0), 0, TOTAL),
-        key: typeof s.key === "string" ? s.key : ""
-      };
-    } catch {
-      return defaultState();
+  function ensureMusicStarted() {
+    if (!music.src) return;
+    if (!music.paused) return;
+    music.play().catch(() => {});
+  }
+
+  // ---------------- Rendering ----------------
+  function setMain(html) {
+    ROOT.innerHTML = html;
+    const screen = $(".screen", ROOT);
+    if (screen) {
+      requestAnimationFrame(() => screen.classList.add("show"));
     }
   }
-  function save(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch{} }
 
-  // ---- background follows cursor (for CSS vars) ----
-  let tx = innerWidth * 0.5, ty = innerHeight * 0.35;
-  let cx = tx, cy = ty;
-  addEventListener("mousemove", (e)=>{ tx=e.clientX; ty=e.clientY; }, {passive:true});
-  (function raf(){
-    cx += (tx - cx) * 0.10;
-    cy += (ty - cy) * 0.10;
-    const x = (cx / Math.max(1, innerWidth)) * 100;
-    const y = (cy / Math.max(1, innerHeight)) * 100;
-    document.documentElement.style.setProperty("--mx", x.toFixed(2) + "%");
-    document.documentElement.style.setProperty("--my", y.toFixed(2) + "%");
-    requestAnimationFrame(raf);
-  })();
+  function hudHtml() {
+    const progress = clamp(state.levelIndex, 0, TOTAL) / TOTAL;
+    const key = (state.key || "").padEnd(KEY_LEN, "_").slice(0, KEY_LEN);
 
-  // ---- audio (no “dip” on correct answer) ----
-  const tracks = Array.isArray(DATA.musicTracks) ? DATA.musicTracks : [];
-  const bgm = new Audio();
-  bgm.preload = "auto";
-  bgm.crossOrigin = "anonymous";
-  bgm.loop = false;
-
-  let bgmStarted = false;
-  let currentTrack = 0;
-
-  let bgmVol = (() => {
-    const v = Number(localStorage.getItem(LS_VOL));
-    return Number.isFinite(v) ? clamp(v,0,1) : 0.30;
-  })();
-
-  function setVol(v){
-    bgmVol = clamp(v,0,1);
-    bgm.volume = bgmVol;
-    try{ localStorage.setItem(LS_VOL, String(bgmVol)); }catch{}
-    const pct = $("#volPct");
-    if (pct) pct.textContent = `${Math.round(bgmVol*100)}%`;
-    const range = $("#vol");
-    if (range) range.value = String(Math.round(bgmVol*100));
-  }
-
-  function fadeTo(target, ms=450){
-    const start = bgm.volume;
-    const end = clamp(target,0,1);
-    const t0 = performance.now();
-    const id = setInterval(()=>{
-      const t = (performance.now() - t0)/ms;
-      if (t>=1){
-        bgm.volume = end;
-        clearInterval(id);
-        return;
-      }
-      const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-      bgm.volume = start + (end-start)*e;
-    },16);
-  }
-
-  function ensureBgm(){
-    if (!tracks.length) return;
-    if (!bgm.src) bgm.src = tracks[currentTrack % tracks.length];
-
-    bgm.onended = () => {
-      currentTrack = (currentTrack + 1) % tracks.length;
-      bgm.src = tracks[currentTrack];
-      bgm.currentTime = 0;
-      bgm.play().catch(()=>{});
-    };
-
-    // если уже играет — не трогаем (важно!)
-    if (!bgm.paused && bgm.currentTime > 0) return;
-
-    bgm.play().then(()=>{
-      if (!bgmStarted){
-        bgmStarted = true;
-        bgm.volume = 0;
-        fadeTo(bgmVol, 500);
-      } else {
-        bgm.volume = bgmVol;
-      }
-    }).catch(()=>{});
-  }
-
-  // browser unlock
-  let unlocked = false;
-  addEventListener("pointerdown", ()=>{
-    if (unlocked) return;
-    unlocked = true;
-    if (state.stage === "start" || state.stage === "quiz") ensureBgm();
-  }, {once:true});
-
-  // ---- UI ----
-  const app = $("#app");
-  if (!app) return;
-
-  function keyShown(){
-    return state.key.padEnd(KEY_LEN, "_").slice(0, KEY_LEN);
-  }
-  function progressPct(){
-    return Math.round((clamp(state.levelIndex,0,TOTAL) / TOTAL) * 100);
-  }
-
-  function headerHTML(){
     return `
       <div class="topbar">
         <div>
-          <div class="brandTitle">🎁 ${esc(DATA.title || "Квест")}</div>
-          <div class="brandSub">${esc(DATA.subtitle || "12 уровней. Собери ключ и открой финал.")}</div>
-          <div class="pills">
-            <span class="pill">🧩 ${TOTAL} уровней</span>
-            <span class="pill">🔑 <span class="keyLine">${esc(keyShown())}</span></span>
+          <div class="brandTitle">🎁 🎁 🎁 ${esc(DATA.title || "Квест для Марка")}</div>
+          <div class="brandSub muted">${esc(DATA.subtitle || "12 уровней. За каждый — 1 символ. Собери ключ и откроешь финал.")}</div>
+
+          <div class="pills" style="margin-top:10px">
+            <div class="pill">🍀 ${TOTAL} уровней</div>
+            <div class="pill">🔑 <span class="mono">${esc(key)}</span></div>
           </div>
         </div>
 
         <div class="audio">
-          <button id="btnMute" class="audioBtn" title="Mute">🔈</button>
-          <input id="vol" class="audioRange" type="range" min="0" max="100" value="${Math.round(bgmVol*100)}">
-          <div id="volPct" class="audioPct">${Math.round(bgmVol*100)}%</div>
+          <button class="audioBtn" id="muteBtn" aria-label="Mute">${music.volume <= 0.001 ? "🔇" : "🔊"}</button>
+          <input id="vol" class="audioRange" type="range" min="0" max="1" step="0.01" value="${music.volume}">
+          <div class="audioPct muted">${Math.round(music.volume * 100)}%</div>
         </div>
+      </div>
+
+      <div class="progressBar" aria-hidden="true">
+        <div class="progressFill" style="width:${(progress * 100).toFixed(2)}%"></div>
       </div>
     `;
   }
 
-  function keyCardHTML(){
-    return `
-      <div class="card pad keyCard">
-        <div style="font-weight:950;font-size:18px;margin-bottom:8px;">🔑 Ключ</div>
-        <div class="small" style="margin-bottom:10px;">Собери ${KEY_LEN} символов:</div>
-        <div class="keyLine">${esc(keyShown())}</div>
-        <div class="small" style="margin-top:10px;">Прогресс: ${Math.min(state.levelIndex, TOTAL)}/${TOTAL}</div>
-      </div>
-    `;
-  }
-
-  function startHTML(){
-    return `
-      <div class="grid">
-        <div class="card pad-lg">
-          <h1 class="h1">Квест для Марка</h1>
-          <div class="small">Прогресс сохраняется. Лучше всего проходить на ПК.</div>
-          <div class="sep"></div>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn primary" id="btnStart">Начать</button>
-            <button class="btn" id="btnReset">Сбросить прогресс</button>
-          </div>
-        </div>
-
-        ${keyCardHTML()}
-      </div>
-    `;
-  }
-
-  function quizHTML(){
-    const i = clamp(state.levelIndex, 0, TOTAL-1);
-    const lvl = DATA.levels[i];
-
-    const title = lvl.title || `Уровень ${i+1}/${TOTAL}`;
-    const question = lvl.question || "Выбери вариант:";
-    const options = Array.isArray(lvl.options) ? lvl.options : [];
-
-    const pct = progressPct();
-
-    return `
-      <div class="grid">
-        ${headerHTML()}
-
-        <div class="progressBar" aria-label="progress">
-          <div class="progressFill" style="width:${pct}%"></div>
-        </div>
-
-        <div class="grid2">
-          <div class="card pad-lg">
-            <div class="small" style="font-weight:900;opacity:.8;">${esc(title)}</div>
-            <div style="margin-top:6px;font-weight:950;font-size:18px;">${esc(question)}</div>
-
-            <div class="options" id="options">
-              ${options.map((t, idx)=>`
-                <button class="btn optBtn" data-idx="${idx}">${esc(t)}</button>
-              `).join("")}
-            </div>
-
-            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn" id="btnReset">Сбросить прогресс</button>
-              <div id="toast" class="small" style="display:none;"></div>
-            </div>
-          </div>
-
-          ${keyCardHTML()}
-        </div>
-      </div>
-    `;
-  }
-
-  function doneHTML(){
-    return `
-      <div class="grid">
-        ${headerHTML()}
-        <div class="card pad-lg">
-          <div style="font-size:28px;font-weight:950;">✅ Готово</div>
-          <div class="small" style="margin-top:6px;">Ключ собран: <span class="keyLine">${esc(state.key.slice(0, KEY_LEN))}</span></div>
-          <div class="sep"></div>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn primary" id="btnOpenFinal">Открыть финал</button>
-            <button class="btn" id="btnReset">Сбросить прогресс</button>
-          </div>
-        </div>
-        ${keyCardHTML()}
-      </div>
-    `;
-  }
-
-  function finalHTML(){
-    const html = DATA.finalHtml;
-    const text = DATA.finalText || (DATA.final?.text ?? "");
-    const title = DATA.finalTitle || (DATA.final?.title ?? "Финал");
-
-    return `
-      <div class="grid">
-        ${headerHTML()}
-        <div class="card pad-lg">
-          <div style="font-size:34px;font-weight:950;">🎉 ${esc(title)}</div>
-          <div class="sep"></div>
-          <div style="color:var(--muted);line-height:1.65;white-space:pre-wrap;">
-            ${html ? html : esc(text || "Добавь финал в data.js: finalText или finalHtml")}
-          </div>
-
-          <div style="margin-top:16px;">
-            <button class="btn" id="btnToStart">На старт</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function render(){
-    // guard
-    state.levelIndex = clamp(state.levelIndex, 0, TOTAL);
-    if (state.key.length > KEY_LEN) state.key = state.key.slice(0, KEY_LEN);
-
-    if (state.key.length >= KEY_LEN || state.levelIndex >= TOTAL) {
-      if (state.stage === "quiz") state.stage = "done";
-    }
-
-    if (state.stage === "start") app.innerHTML = startHTML();
-    else if (state.stage === "quiz") app.innerHTML = quizHTML();
-    else if (state.stage === "done") app.innerHTML = doneHTML();
-    else app.innerHTML = finalHTML();
-
-    // smooth key card in
-    const keyCard = $(".keyCard");
-    if (keyCard) {
-      keyCard.classList.remove("is-in");
-      requestAnimationFrame(()=>requestAnimationFrame(()=>keyCard.classList.add("is-in")));
-    }
-function setupVideoLevel(lvl){
-  if (!lvl || lvl.type !== "video") return;
-
-  const v = document.getElementById("lvlVideo");
-  const startBtn = document.getElementById("videoStartBtn");
-  const options = document.getElementById("options");
-  const stopAt = Number(lvl.stopAt || 0);
-
-  if (!v || !options) return;
-
-  let gated = false;
-  let unlocked = false;
-
-  function showOptions(){
-    options.classList.remove("is-hidden");
-    options.classList.add("fade-in");
-  }
-  function hideOptions(){
-    options.classList.add("is-hidden");
-    options.classList.remove("fade-in");
-  }
-
-  if (startBtn){
-    startBtn.addEventListener("click", ()=>{
-      startBtn.remove();
-      v.play().catch(()=>{});
-    });
-  }
-
-  function gate(){
-    if (unlocked || gated || !stopAt) return;
-    if (v.currentTime >= stopAt){
-      gated = true;
-      v.pause();
-      try { v.currentTime = stopAt; } catch(e){}
-      showOptions();
-    }
-  }
-
-  v.addEventListener("timeupdate", gate);
-  v.addEventListener("seeked", gate);
-
-  // Делаем доступным для общего обработчика ответов
-  window.__videoLevel = {
-    v,
-    stopAt,
-    showOptions,
-    hideOptions,
-    unlock(){
-      unlocked = true;
-      gated = false;
-    }
-  };
-
-  // ВАЖНО: засчитываем уровень ТОЛЬКО когда видео ДОСМОТРЕНО
-  v.addEventListener("ended", ()=>{
-    // тут вызывай твою текущую функцию "правильный ответ" / переход дальше:
-    // пример:
-    onCorrectAnswer(lvl.keyChar);
-  });
-}
-const lvl = DATA.levels[state.levelIndex];
-setupVideoLevel(lvl);
-
-    bindUI();
-  }
-
-  function bindGlow(){
-    $$(".btn").forEach((btn)=>{
-      btn.addEventListener("pointermove", (e)=>{
-        const r = btn.getBoundingClientRect();
-        const x = ((e.clientX - r.left) / r.width) * 100;
-        const y = ((e.clientY - r.top) / r.height) * 100;
-        btn.style.setProperty("--bx", x.toFixed(2) + "%");
-        btn.style.setProperty("--by", y.toFixed(2) + "%");
-      }, {passive:true});
-    });
-  }
-
-  function bindUI(){
-    bindGlow();
-
-    $("#btnReset")?.addEventListener("click", ()=>{
-      state = defaultState();
-      save();
-      render();
-    });
-
-    $("#btnStart")?.addEventListener("click", ()=>{
-      state.stage = "quiz";
-      save();
-      render();
-      if (unlocked) ensureBgm();
-    });
-
-    $("#btnOpenFinal")?.addEventListener("click", ()=>{
-      state.stage = "final";
-      save();
-      render();
-    });
-
-    $("#btnToStart")?.addEventListener("click", ()=>{
-      state.stage = "start";
-      save();
-      render();
-    });
-
-    // volume: NO render on input
+  function bindHud() {
     const vol = $("#vol");
-    const pct = $("#volPct");
-    if (vol){
-      vol.value = String(Math.round(bgmVol*100));
-      vol.addEventListener("input", ()=>{
-        const v = clamp(Number(vol.value)/100, 0, 1);
-        setVol(v);
-        if (pct) pct.textContent = `${Math.round(v*100)}%`;
-      }, {passive:true});
+    const muteBtn = $("#muteBtn");
+    const pct = $(".audioPct");
+
+    if (vol) {
+      vol.addEventListener("input", () => {
+        volume = clamp(parseFloat(vol.value), 0, 1);
+        music.volume = volume;
+        localStorage.setItem(VOL_KEY, String(volume));
+        if (pct) pct.textContent = `${Math.round(volume * 100)}%`;
+        if (muteBtn) muteBtn.textContent = volume <= 0.001 ? "🔇" : "🔊";
+      });
     }
 
-    $("#btnMute")?.addEventListener("click", ()=>{
-      if (bgmVol > 0.001) setVol(0);
-      else setVol(0.30);
-    });
-
-    // quiz options
-    const options = $("#options");
-    if (options){
-      options.addEventListener("click", (e)=>{
-        const btn = e.target.closest("button[data-idx]");
-        if (!btn) return;
-
-        const idx = Number(btn.getAttribute("data-idx"));
-        const i = clamp(state.levelIndex, 0, TOTAL-1);
-        const lvl = DATA.levels[i];
-
-        const ok = Number(lvl.answerIndex) === idx;
-        const toast = $("#toast");
-
-        if (toast){
-          toast.style.display = "block";
-          toast.textContent = ok ? "✅ Верно!" : "❌ Неверно. Попробуй ещё.";
+    if (muteBtn) {
+      muteBtn.addEventListener("click", () => {
+        ensureMusicStarted();
+        if (music.volume > 0.001) {
+          volume = music.volume;
+          music.volume = 0;
+          localStorage.setItem(VOL_KEY, "0");
+          if (vol) vol.value = "0";
+          if (pct) pct.textContent = "0%";
+          muteBtn.textContent = "🔇";
+        } else {
+          const restore = clamp(volume || 0.65, 0.05, 1);
+          music.volume = restore;
+          localStorage.setItem(VOL_KEY, String(restore));
+          if (vol) vol.value = String(restore);
+          if (pct) pct.textContent = `${Math.round(restore * 100)}%`;
+          muteBtn.textContent = "🔊";
         }
-
-        if (!ok){
-          btn.animate(
-            [{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],
-            {duration:220,easing:"ease-out"}
-          );
-          return;
-        }
-
-        const ch = typeof lvl.keyChar === "string" ? lvl.keyChar : "";
-        if (ch && state.key.length < KEY_LEN) state.key += ch;
-
-        state.levelIndex = clamp(state.levelIndex + 1, 0, TOTAL);
-
-        if (state.levelIndex >= TOTAL || state.key.length >= KEY_LEN){
-          state.stage = "done";
-        }
-
-        save();
-        setTimeout(()=>render(), 220);
       });
     }
   }
 
-  render();
-})();
-// =========================
-// WOW UI helpers (toasts + ripple + hover glow)
-// =========================
-(function WOW_UI(){
-  // toast container
-  let wrap = document.querySelector(".toast-wrap");
-  if (!wrap){
-    wrap = document.createElement("div");
-    wrap.className = "toast-wrap";
-    document.body.appendChild(wrap);
+  function render() {
+    if (state.levelIndex >= TOTAL) {
+      renderFinish();
+      return;
+    }
+    const level = DATA.levels[state.levelIndex];
+    if (!level) { renderFinish(); return; }
+
+    if (String(level.type || "").toLowerCase() === "video") {
+      renderVideoLevel(level, state.levelIndex + 1);
+    } else {
+      renderQuizLevel(level, state.levelIndex + 1);
+    }
   }
 
-  function toast({type="bad", title="Упс", subtitle="", ms=2200}){
-    const t = document.createElement("div");
-    t.className = `toast ${type}`;
-    t.innerHTML = `
-      <div class="ico">${type==="ok" ? "✅" : "❌"}</div>
-      <div>
-        <div class="txt">${title}</div>
-        ${subtitle ? `<div class="sub">${subtitle}</div>` : ""}
+  function renderStart() {
+    const key = (state.key || "").padEnd(KEY_LEN, "_").slice(0, KEY_LEN);
+    setMain(`
+      <div class="screen">
+        ${hudHtml()}
+
+        <div class="grid2" style="margin-top:14px">
+          <div class="card pad-lg">
+            <div class="h1">${esc(DATA.title || "Квест для Марка")}</div>
+            <div class="muted" style="margin-top:8px">${esc(DATA.subtitle || "")}</div>
+            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn" id="startBtn">Начать</button>
+              <button class="btn" id="resetBtn">Сбросить прогресс</button>
+            </div>
+          </div>
+
+          <div class="card pad-lg keyCard">
+            <div class="h2">🔑 Ключ</div>
+            <div class="muted">Собери ${KEY_LEN} символов:</div>
+            <div class="key mono" style="margin-top:10px">${esc(key)}</div>
+            <div class="muted" style="margin-top:10px">Прогресс: ${clamp(state.levelIndex, 0, TOTAL)}/${TOTAL}</div>
+          </div>
+        </div>
       </div>
-      <button class="x" aria-label="Закрыть">✕</button>
-    `;
-    wrap.appendChild(t);
+    `);
+    bindHud();
 
-    const close = () => {
-      t.style.animation = "toastOut .28s ease forwards";
-      setTimeout(() => t.remove(), 260);
-    };
-    t.querySelector(".x").addEventListener("click", close);
-
-    if (ms) setTimeout(close, ms);
+    $("#startBtn")?.addEventListener("click", () => {
+      ensureMusicStarted();
+      render();
+    });
+    $("#resetBtn")?.addEventListener("click", () => {
+      resetState();
+      renderStart();
+    });
   }
 
-  // expose globally so you can call it from existing logic
-  window.UI_TOAST = toast;
+  function renderFinish() {
+    const key = (state.key || "").padEnd(KEY_LEN, "_").slice(0, KEY_LEN);
+    setMain(`
+      <div class="screen">
+        ${hudHtml()}
+        <div class="grid2" style="margin-top:14px">
+          <div class="card pad-lg">
+            <div class="h1">🎉 Финал</div>
+            <div class="muted" style="margin-top:8px">Все уровни пройдены.</div>
+            <div class="h2" style="margin-top:16px">Ключ:</div>
+            <div class="key mono" style="margin-top:10px">${esc(key)}</div>
+            <div style="margin-top:14px">
+              <button class="btn" id="againBtn">Пройти ещё раз</button>
+            </div>
+          </div>
 
-  // ripple on click (delegated)
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest("button, .btn, .option, .answer, .choice");
-    if (!btn) return;
+          <div class="card pad-lg">
+            <div class="h2">Подсказка</div>
+            <div class="muted" style="margin-top:8px">Если хочешь — добавим “вау”: мини-параллакс, подсветку по курсору, анимации экранов, красивый финальный экран.</div>
+          </div>
+        </div>
+      </div>
+    `);
+    bindHud();
+    $("#againBtn")?.addEventListener("click", () => {
+      resetState();
+      renderStart();
+    });
+  }
 
-    const r = btn.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+  function renderQuizLevel(level, shownNum) {
+    const title = level.title || `Уровень ${shownNum}/${TOTAL}`;
+    const question = level.question || "";
+    const opts = Array.isArray(level.options) ? level.options : [];
+    const answerIndex = Number(level.answerIndex ?? 0);
 
-    const s = document.createElement("span");
-    s.className = "ripple";
-    s.style.left = x + "px";
-    s.style.top  = y + "px";
-    btn.appendChild(s);
-    setTimeout(() => s.remove(), 600);
+    setMain(`
+      <div class="screen">
+        ${hudHtml()}
+        <div class="grid2" style="margin-top:14px">
+          <div class="card pad-lg">
+            <div class="muted">${esc(title)}</div>
+            <div class="h2" style="margin-top:8px">${esc(question)}</div>
+
+            <div class="options" style="margin-top:14px">
+              ${opts.map((t, i) => `
+                <button class="optBtn" data-idx="${i}"><span>${esc(t)}</span></button>
+              `).join("")}
+            </div>
+
+            <div id="msg" class="msg muted" style="margin-top:12px; min-height:22px"></div>
+
+            <div style="margin-top:14px">
+              <button class="btn" id="resetBtn">Сбросить прогресс</button>
+            </div>
+          </div>
+
+          <div class="card pad-lg keyCard">
+            <div class="h2">🔑 Ключ</div>
+            <div class="muted">Собери ${KEY_LEN} символов:</div>
+            <div class="key mono" style="margin-top:10px">${esc((state.key || "").padEnd(KEY_LEN, "_").slice(0, KEY_LEN))}</div>
+            <div class="muted" style="margin-top:10px">Прогресс: ${shownNum - 1}/${TOTAL}</div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    bindHud();
+    ensureMusicStarted();
+
+    const msg = $("#msg");
+
+    $$(".optBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ensureMusicStarted();
+        const idx = Number(btn.dataset.idx);
+        const ok = idx === answerIndex;
+
+        if (!ok) {
+          if (msg) msg.textContent = "✖ Неверно. Попробуй ещё.";
+          btn.classList.add("shake");
+          setTimeout(() => btn.classList.remove("shake"), 420);
+          return;
+        }
+
+        if (msg) msg.textContent = "✔ Верно!";
+        btn.classList.add("ok");
+        onCorrectAnswer(level.keyChar ?? "");
+      });
+    });
+
+    $("#resetBtn")?.addEventListener("click", () => {
+      resetState();
+      renderStart();
+    });
+  }
+
+  function renderVideoLevel(level, shownNum) {
+    const title = level.title || `Уровень ${shownNum}/${TOTAL}`;
+    const question = level.question || "Смотри отрывок до кульминации. Что будет дальше?";
+    const videoSrc = level.videoSrc || "";
+    const stopAt = Number(level.stopAt ?? 0);
+    const opts = Array.isArray(level.options) ? level.options : [];
+    const answerIndex = Number(level.answerIndex ?? 0);
+
+    setMain(`
+      <div class="screen">
+        ${hudHtml()}
+        <div class="grid2" style="margin-top:14px">
+          <div class="card pad-lg">
+            <div class="muted">${esc(title)}</div>
+            <div class="h2" style="margin-top:8px">${esc(question)}</div>
+
+            <div class="videoWrap" style="margin-top:14px">
+              <video id="video" class="video" src="${esc(videoSrc)}" controls preload="metadata" playsinline></video>
+              <button id="videoStartBtn" class="videoStartBtn" type="button">▶ Смотреть</button>
+            </div>
+
+            <div id="videoOptions" class="options" style="margin-top:14px; display:none">
+              ${opts.map((t, i) => `
+                <button class="optBtn" data-idx="${i}"><span>${esc(t)}</span></button>
+              `).join("")}
+            </div>
+
+            <div id="msg" class="msg muted" style="margin-top:12px; min-height:22px"></div>
+
+            <div style="margin-top:14px">
+              <button class="btn" id="resetBtn">Сбросить прогресс</button>
+            </div>
+          </div>
+
+          <div class="card pad-lg keyCard">
+            <div class="h2">🔑 Ключ</div>
+            <div class="muted">Собери ${KEY_LEN} символов:</div>
+            <div class="key mono" style="margin-top:10px">${esc((state.key || "").padEnd(KEY_LEN, "_").slice(0, KEY_LEN))}</div>
+            <div class="muted" style="margin-top:10px">Прогресс: ${shownNum - 1}/${TOTAL}</div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    bindHud();
+    ensureMusicStarted();
+
+    const v = $("#video");
+    const startBtn = $("#videoStartBtn");
+    const optionsEl = $("#videoOptions");
+    const msg = $("#msg");
+
+    let gated = false;
+    let solved = false;
+
+    function showOptions() {
+      if (optionsEl) optionsEl.style.display = "";
+      if (msg) msg.textContent = "Выбери вариант, чтобы продолжить.";
+    }
+    function hideOptions() {
+      if (optionsEl) optionsEl.style.display = "none";
+    }
+
+    function gateCheck() {
+      if (!v || solved) return;
+      if (stopAt > 0 && v.currentTime >= stopAt && !gated) {
+        gated = true;
+        try { v.pause(); } catch (_) {}
+        try { v.currentTime = stopAt; } catch (_) {}
+        showOptions();
+      }
+    }
+
+    if (v) {
+      const startPlayback = () => {
+        ensureMusicStarted();
+        startBtn?.classList.add("hide");
+        v.play().catch(() => {});
+      };
+      startBtn?.addEventListener("click", startPlayback);
+      v.addEventListener("play", () => startBtn?.classList.add("hide"));
+
+      v.addEventListener("timeupdate", gateCheck);
+      v.addEventListener("seeking", gateCheck);
+
+      v.addEventListener("ended", () => {
+        if (!solved) return;
+        onCorrectAnswer(level.keyChar ?? "");
+      });
+
+      if (!(stopAt > 0)) showOptions();
+    }
+
+    $$("#videoOptions .optBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ensureMusicStarted();
+        if (solved) return;
+
+        const idx = Number(btn.dataset.idx);
+        const ok = idx === answerIndex;
+
+        if (!ok) {
+          if (msg) msg.textContent = "✖ Неверно. Попробуй ещё.";
+          if (v && stopAt > 0) {
+            try { v.pause(); } catch (_) {}
+            try { v.currentTime = stopAt; } catch (_) {}
+          }
+          btn.classList.add("shake");
+          setTimeout(() => btn.classList.remove("shake"), 420);
+          return;
+        }
+
+        solved = true;
+        hideOptions();
+        if (msg) msg.textContent = "✔ Верно. Смотри продолжение…";
+
+        if (v) {
+          if (stopAt > 0) {
+            try { v.currentTime = Math.min(stopAt + 0.08, (v.duration || stopAt + 0.08)); } catch (_) {}
+          }
+          v.play().catch(() => {});
+        } else {
+          onCorrectAnswer(level.keyChar ?? "");
+        }
+      });
+    });
+
+    $("#resetBtn")?.addEventListener("click", () => {
+      resetState();
+      renderStart();
+    });
+  }
+
+  function onCorrectAnswer(char) {
+    const c = String(char ?? "");
+    if (c) state.key += c;
+    state.levelIndex += 1;
+    saveState();
+    render();
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { levelIndex: 0, key: "" };
+      const obj = JSON.parse(raw);
+      const li = Number(obj.levelIndex ?? 0);
+      const key = String(obj.key ?? "");
+      return { levelIndex: Number.isFinite(li) ? li : 0, key };
+    } catch (_) {
+      return { levelIndex: 0, key: "" };
+    }
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+  }
+
+  function resetState() {
+    state = { levelIndex: 0, key: "" };
+    try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+    try { localStorage.removeItem(TRACK_KEY); } catch (_) {}
+  }
+
+  // ---------------- Pointer / wow micro ----------------
+  // 1) BG gradient follows cursor: CSS reads --px/--py
+  document.addEventListener("pointermove", (e) => {
+    const x = (e.clientX / window.innerWidth) * 100;
+    const y = (e.clientY / window.innerHeight) * 100;
+    document.documentElement.style.setProperty("--px", x.toFixed(2) + "%");
+    document.documentElement.style.setProperty("--py", y.toFixed(2) + "%");
   }, { passive: true });
 
-  // cursor glow position for buttons
+  // 2) Button glow position: CSS reads --bx/--by and/or --mx/--my
   document.addEventListener("pointermove", (e) => {
-    const el = e.target.closest("button, .btn, .option, .answer, .choice");
+    const el = safeClosest(e.target, ".btn, .optBtn, .pill");
     if (!el) return;
     const r = el.getBoundingClientRect();
     const mx = ((e.clientX - r.left) / r.width) * 100;
     const my = ((e.clientY - r.top) / r.height) * 100;
-    el.style.setProperty("--mx", mx + "%");
-    el.style.setProperty("--my", my + "%");
+    el.style.setProperty("--bx", mx.toFixed(2) + "%");
+    el.style.setProperty("--by", my.toFixed(2) + "%");
+    el.style.setProperty("--mx", mx.toFixed(2) + "%");
+    el.style.setProperty("--my", my.toFixed(2) + "%");
   }, { passive: true });
-})();
 
-
-// =========================
-// WOW micro-interactions (single instance)
-// =========================
-(() => {
-  // Guard: run once even if file is accidentally included twice
-  if (window.__WOW_ENHANCE__) return;
-  window.__WOW_ENHANCE__ = true;
-
-  const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-  const getEl = (e) => {
-    const t = e && e.target;
-    return (t && t.nodeType === 1) ? t : null;
-  };
-
-  // Cursor position for glow on buttons/options/cards
+  // 3) Card tilt (safe)
   document.addEventListener("pointermove", (e) => {
-    const el = getEl(e);
-    if (!el) return;
-
-    const hit = el.closest && el.closest(".btn, .optBtn, .choice, .option, .card, .panel, .box, .section");
-    if (!hit) return;
-
-    const r = hit.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / (r.width || 1)) * 100;
-    const my = ((e.clientY - r.top) / (r.height || 1)) * 100;
-    hit.style.setProperty("--mx", mx.toFixed(2) + "%");
-    hit.style.setProperty("--my", my.toFixed(2) + "%");
+    const card = safeClosest(e.target, ".card");
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    const dx = ((e.clientX - r.left) / r.width) - 0.5;
+    const dy = ((e.clientY - r.top) / r.height) - 0.5;
+    const rx = (-dy * 6).toFixed(2);
+    const ry = (dx * 8).toFixed(2);
+    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
   }, { passive: true });
 
-  // Soft tilt for cards
-  if (!prefersReduced) {
-    let raf = 0;
-    let last = null;
+  document.addEventListener("pointerleave", () => {
+    $$(".card").forEach(c => (c.style.transform = ""));
+  }, true);
 
-    const apply = () => {
-      raf = 0;
-      if (!last) return;
-      const { card, x, y } = last;
-      last = null;
-
-      const r = card.getBoundingClientRect();
-      const nx = ((x - r.left) / (r.width || 1)) * 2 - 1;
-      const ny = ((y - r.top) / (r.height || 1)) * 2 - 1;
-
-      const rx = clamp(-ny * 6, -6, 6);
-      const ry = clamp(nx * 8, -8, 8);
-
-      card.style.transform = `translateZ(0) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-    };
-
-    document.addEventListener("pointermove", (e) => {
-      const el = getEl(e);
-      if (!el) return;
-      const card = el.closest && el.closest(".card");
-      if (!card) return;
-
-      last = { card, x: e.clientX, y: e.clientY };
-      if (!raf) raf = requestAnimationFrame(apply);
-    }, { passive: true });
-
-    document.addEventListener("pointerleave", (e) => {
-      const el = getEl(e);
-      if (!el) return;
-      const card = el.closest && el.closest(".card");
-      if (!card) return;
-      card.style.transform = "";
-    }, true);
+  // ---------------- Start ----------------
+  if (state.levelIndex === 0 && !state.key) {
+    renderStart();
+  } else {
+    render();
   }
-
-  // Ripple on click for buttons/options
-  document.addEventListener("pointerdown", (e) => {
-    const el = getEl(e);
-    if (!el) return;
-
-    const btn = el.closest && el.closest(".btn, .optBtn, .choice, .option");
-    if (!btn) return;
-
-    // Avoid ripples on disabled
-    if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
-
-    const r = btn.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-
-    const ripple = document.createElement("span");
-    ripple.className = "ripple";
-    ripple.style.left = x + "px";
-    ripple.style.top = y + "px";
-    btn.appendChild(ripple);
-
-    setTimeout(() => ripple.remove(), 650);
-  }, { passive: true });
 })();
-${lvl.type === "video" ? `
-  <div class="videoWrap">
-    <video id="lvlVideo"
-      src="${escapeAttr(lvl.videoSrc)}"
-      playsinline
-      preload="metadata"
-      controls
-    ></video>
-
-    <button id="videoStartBtn" class="videoStart btn">▶ Смотреть</button>
-  </div>
-` : ``}
-
-
-function renderVideoLevel(level, shownLevelNum) {
-  const TOTAL_LEVELS = window.QUIZ_DATA.levels.length;
-
-  // UI
-  setMain(`
-    <div class="screen" id="screen">
-      <div class="card pad-lg level" style="max-width:980px;margin:22px auto;padding:22px;">
-        <div style="opacity:.78;font-weight:700;">Уровень ${shownLevelNum}/${TOTAL_LEVELS} — ${escapeHtml(level.title || "Видео")}</div>
-        <div style="font-size:20px;font-weight:900;margin-top:8px;">${escapeHtml(level.question || "")}</div>
-
-        <div class="card" style="margin-top:14px;padding:14px;">
-          <div class="videoWrap" style="position:relative;border-radius:14px;overflow:hidden;background:#000;">
-            <video id="video"
-              src="${escapeHtml(level.videoSrc)}"
-              controls
-              playsinline
-              preload="metadata"
-              style="width:100%;height:auto;display:block;">
-            </video>
-
-            <button id="videoStartBtn" class="btn"
-              style="
-                position:absolute;inset:0;
-                display:flex;align-items:center;justify-content:center;
-                font-weight:900;font-size:18px;
-                background:linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.55));
-                border:0;border-radius:14px;
-              ">
-              ▶ Смотреть
-            </button>
-          </div>
-
-          <div id="videoHelp" class="muted" style="margin-top:10px;opacity:.8;">
-            Видео остановится в нужный момент — потом появятся варианты ответа.
-          </div>
-
-          <div id="videoOptions" style="margin-top:14px;display:none;gap:10px;">
-            ${level.options.map((t, i) => `
-              <button class="btn optBtn" data-idx="${i}" style="padding:14px 16px;text-align:left;">
-                ${escapeHtml(t)}
-              </button>
-            `).join("")}
-          </div>
-
-          <div id="msg" class="muted" style="margin-top:12px;min-height:22px;"></div>
-        </div>
-      </div>
-    </div>
-  `);
-
-  const video = document.getElementById("video");
-  const startBtn = document.getElementById("videoStartBtn");
-  const optsBox = document.getElementById("videoOptions");
-  const msg = document.getElementById("msg");
-
-  // stopAt (секунды)
-  const stopAt = Number(level.stopAt ?? 0);
-  let stoppedOnce = false;
-  let started = false;
-
-  function showOptions() {
-    optsBox.style.display = "grid";
-    optsBox.classList.add("fadeIn");
-  }
-
-  function hideOptions() {
-    optsBox.style.display = "none";
-    optsBox.classList.remove("fadeIn");
-  }
-
-  function setMsg(text, ok = false) {
-    msg.textContent = text || "";
-    msg.style.opacity = text ? "1" : "0";
-    msg.style.color = ok ? "rgba(140,255,200,.95)" : "rgba(255,170,170,.95)";
-  }
-
-  // Запуск (чтобы браузер точно разрешил play)
-  startBtn.addEventListener("click", async () => {
-    try {
-      started = true;
-      startBtn.style.display = "none";
-      setMsg("");
-      await video.play();
-    } catch (e) {
-      // если браузер блокирует — покажем подсказку
-      startBtn.style.display = "flex";
-      setMsg("Нажми ещё раз ▶ (браузер иногда блокирует автозапуск).");
-    }
-  });
-
-  // Остановка в момент stopAt
-  video.addEventListener("timeupdate", () => {
-    if (!started) return;
-    if (stoppedOnce) return;
-    if (!stopAt) return;
-
-    if (video.currentTime >= stopAt) {
-      stoppedOnce = true;
-      video.pause();
-      // чуть “отпрыгнем” назад, чтобы не перескочило при play
-      video.currentTime = Math.max(0, stopAt - 0.03);
-
-      // плавно показываем варианты
-      showOptions();
-      setMsg("Что будет дальше? Выбери вариант.");
-    }
-	<div id="options" class="options ${lvl.type === "video" ? "is-hidden" : ""}">
-  ${lvl.options.map((t, i) => `
-    <button class="btn optBtn" data-idx="${i}">${escapeHtml(t)}</button>
-  `).join("")}
-</div>
-
-  });
-
-  // Клики по вариантам
-  optsBox.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".optBtn");
-    if (!btn) return;
-
-    const idx = Number(btn.dataset.idx);
-    if (Number.isNaN(idx)) return;
-
-    if (idx === Number(level.answerIndex)) {
-      setMsg("Верно ✅", true);
-
-      // 1) начисляем символ ключа
-      if (typeof applyCorrectAnswer === "function") {
-        // если у тебя уже есть общий обработчик — используй его
-        applyCorrectAnswer(level);
-      } else {
-        // fallback: вручную
-        state.key = (state.key || "") + (level.keyChar || "");
-        state.levelIndex = Math.min(state.levelIndex + 1, TOTAL_LEVELS - 1);
-        saveState();
-      }
-
-      // 2) прячем варианты и продолжаем видео
-      hideOptions();
-      setTimeout(async () => {
-        try {
-          // продолжим чуть после stopAt
-          video.currentTime = stopAt ? (stopAt + 0.02) : video.currentTime;
-          await video.play();
-        } catch (_) {}
-      }, 250);
-
-    } else {
-      setMsg("Неверно. Попробуй ещё.", false);
-      // остаёмся на паузе, варианты остаются
-    }
-  });
-
-  // Когда видео полностью закончилось — идём дальше
-  video.addEventListener("ended", () => {
-    // если у тебя правильный ответ уже перевёл levelIndex — просто render()
-    if (typeof render === "function") render();
-  });
-}
-
-  // 1) Останавливаем видео в нужный момент и показываем варианты
-  function gateCheck() {
-    if (!v || solved) return;
-    if (stopAt > 0 && v.currentTime >= stopAt && !gated) {
-      gated = true;
-      v.pause();
-      // фиксируем кадр ровно на stopAt
-      try { v.currentTime = stopAt; } catch (_) {}
-      showOptions();
-    }
-  }
-
-  if (v) {
-    v.addEventListener("timeupdate", gateCheck);
-
-    // на всякий: если браузер проскочил timeupdate
-    v.addEventListener("seeked", gateCheck);
-
-    // 2) После правильного ответа — видео продолжается, а засчитываем уровень ТОЛЬКО когда видео закончится
-    v.addEventListener("ended", () => {
-      if (!solved) return;
-      // теперь можно засчитать уровень и перейти дальше
-      onCorrectAnswer(level.keyChar);
-    });
-
-    // если stopAt не задан — показываем варианты сразу (чтоб не сломалось)
-    if (!stopAt || stopAt <= 0) {
-      showOptions();
-    }
-  }
-
-  // 3) Клики по вариантам
-  // 3) Клики по вариантам
-document.querySelectorAll(".optBtn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    if (solved) return;
-
-    const idx = Number(btn.dataset.idx);
-    const ok = idx === Number(level.answerIndex);
-
-    if (!ok) {
-      if (msg) msg.textContent = "✘ Неверно. Попробуй ещё.";
-      // держим паузу на stopAt
-      if (v && stopAt > 0) {
-        v.pause();
-        try { v.currentTime = stopAt; } catch (_) {}
-      }
-      return;
-    }
-
-    // правильный
-    solved = true;
-    hideOptions();
-    if (msg) msg.textContent = "✅ Верно. Смотри продолжение…";
-
-    if (v) {
-      // чуть дальше stopAt, чтобы снова не сработал gateCheck
-      if (stopAt > 0) {
-        try { v.currentTime = Math.min(stopAt + 0.05, v.duration || stopAt + 0.05); } catch (_) {}
-      }
-      v.play().catch(() => {});
-    }
-  });
-});
-
-
