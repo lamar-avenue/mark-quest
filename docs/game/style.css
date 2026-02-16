@@ -951,3 +951,30 @@ function bindMagnet() {
 }
 .videoStartBtn:hover{transform:scale(1.01)}
 .videoStartBtn.hide{opacity:0;pointer-events:none}
+/* ===== Premium motion ===== */
+:root{
+  --ease-out: cubic-bezier(.2,.8,.2,1);
+  --ease-spring: cubic-bezier(.2,1,.2,1);
+}
+
+.screen{
+  opacity: 0;
+  transform: translateY(10px) scale(.99);
+  filter: blur(6px);
+  transition: opacity .55s var(--ease-out), transform .55s var(--ease-out), filter .55s var(--ease-out);
+  will-change: opacity, transform, filter;
+}
+.screen.show{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+.card{
+  transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .35s var(--ease-out);
+  will-change: transform;
+}
+.card:hover{
+  box-shadow: 0 24px 80px rgba(0,0,0,.45);
+  border-color: rgba(255,255,255,.12);
+}
