@@ -374,9 +374,7 @@ function withBase(rel) {
     const options = $("#options");
     if (options){
       options.addEventListener("click", (e)=>{
-        const _t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-  if (!_t) return;
-  const btn = _t.closest("button[data-idx]");
+        const btn = e.target.closest("button[data-idx]");
         if (!btn) return;
 
         const idx = Number(btn.getAttribute("data-idx"));
@@ -420,11 +418,6 @@ function withBase(rel) {
 // WOW UI helpers (toasts + ripple + hover glow)
 // =========================
 (function WOW_UI(){
-  function _evtTargetEl(e) {
-    const t = e && e.target;
-    return (t && t.nodeType === 1) ? t : (t && t.parentElement) ? t.parentElement : null;
-  }
-
   // toast container
   let wrap = document.querySelector(".toast-wrap");
   if (!wrap){
@@ -460,9 +453,7 @@ function withBase(rel) {
 
   // ripple on click (delegated)
   document.addEventListener("click", (e) => {
-    const t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-  if (!t) return;
-  const btn = t.closest("button, .btn, .option, .answer, .choice");
+    const btn = e.target.closest("button, .btn, .option, .answer, .choice");
     if (!btn) return;
 
     const r = btn.getBoundingClientRect();
@@ -479,8 +470,7 @@ function withBase(rel) {
 
   // cursor glow position for buttons
   document.addEventListener("pointermove", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const el = t.closest("button, .btn, .option, .answer, .choice");
+    const el = e.target.closest("button, .btn, .option, .answer, .choice");
     if (!el) return;
     const r = el.getBoundingClientRect();
     const mx = ((e.clientX - r.left) / r.width) * 100;
@@ -489,310 +479,106 @@ function withBase(rel) {
     el.style.setProperty("--my", my + "%");
   }, { passive: true });
 })();
+
+
 // =========================
-// WOW auto-enhance (no need to know your classes)
-// Put at the very end of app.js
+// WOW micro-interactions (single instance)
 // =========================
-(function WOW_AUTO(){
-  const app = document.getElementById("app");
-// ===== Screen transitions (fade + slide) =====
-const _prefersReducedMotion = (() => {
-  try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-  catch (_) { return false; }
-})();
+(() => {
+  // Guard: run once even if file is accidentally included twice
+  if (window.__WOW_ENHANCE__) return;
+  window.__WOW_ENHANCE__ = true;
 
-let _activeLayer = null;
-let _isTransitioning = false;
+  const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function mountScreen(html, { animate = true } = {}) {
-  const layer = document.createElement("div");
-  layer.className = "screenLayer";
-  layer.innerHTML = html;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  if (!_activeLayer) {
-    app.innerHTML = "";
-    app.appendChild(layer);
-    _activeLayer = layer;
-    return;
-  }
-
-  if (!animate || _prefersReducedMotion) {
-    app.replaceChild(layer, _activeLayer);
-    _activeLayer = layer;
-    return;
-  }
-
-  if (_isTransitioning) {
-    app.replaceChild(layer, _activeLayer);
-    _activeLayer = layer;
-    return;
-  }
-
-  _isTransitioning = true;
-
-  const prev = _activeLayer;
-  const prevH = prev.getBoundingClientRect().height;
-  app.style.height = Math.max(1, Math.round(prevH)) + "px";
-  app.style.position = "relative";
-
-  layer.classList.add("is-enter");
-  prev.classList.add("is-exit");
-
-  app.appendChild(layer);
-
-  requestAnimationFrame(() => {
-    layer.classList.add("is-enter-active");
-    prev.classList.add("is-exit-active");
-  });
-
-  const done = () => {
-    try { prev.remove(); } catch (_) {}
-    layer.classList.remove("is-enter", "is-enter-active");
-    app.style.height = "";
-    _activeLayer = layer;
-    _isTransitioning = false;
+  const getEl = (e) => {
+    const t = e && e.target;
+    return (t && t.nodeType === 1) ? t : null;
   };
 
-  const t = setTimeout(done, 650);
-  layer.addEventListener("transitionend", () => {
-    clearTimeout(t);
-    done();
-  }, { once: true });
-}
+  // Cursor position for glow on buttons/options/cards
+  document.addEventListener("pointermove", (e) => {
+    const el = getEl(e);
+    if (!el) return;
 
-  if (!app) return;
+    const hit = el.closest && el.closest(".btn, .optBtn, .choice, .option, .card, .panel, .box, .section");
+    if (!hit) return;
 
-  // 1) Wrap current content into .screen on each render (MutationObserver)
-  const ensureScreen = () => {
-    // if app has direct text nodes etc - wrap everything
-    const hasScreen = app.firstElementChild && app.firstElementChild.classList.contains("screen");
-    if (hasScreen) return;
+    const r = hit.getBoundingClientRect();
+    const mx = ((e.clientX - r.left) / (r.width || 1)) * 100;
+    const my = ((e.clientY - r.top) / (r.height || 1)) * 100;
+    hit.style.setProperty("--mx", mx.toFixed(2) + "%");
+    hit.style.setProperty("--my", my.toFixed(2) + "%");
+  }, { passive: true });
 
-    const wrap = document.createElement("div");
-    wrap.className = "screen";
+  // Soft tilt for cards
+  if (!prefersReduced) {
+    let raf = 0;
+    let last = null;
 
-    // move all nodes into wrap
-    while (app.firstChild) wrap.appendChild(app.firstChild);
-    app.appendChild(wrap);
-  };
+    const apply = () => {
+      raf = 0;
+      if (!last) return;
+      const { card, x, y } = last;
+      last = null;
 
-  ensureScreen();
+      const r = card.getBoundingClientRect();
+      const nx = ((x - r.left) / (r.width || 1)) * 2 - 1;
+      const ny = ((y - r.top) / (r.height || 1)) * 2 - 1;
 
-  let raf = 0;
-  const obs = new MutationObserver(() => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => ensureScreen());
-  });
-  obs.observe(app, { childList: true });
+      const rx = clamp(-ny * 6, -6, 6);
+      const ry = clamp(nx * 8, -8, 8);
 
-  // 2) Ripple on click for buttons/options
-  document.addEventListener("click", (e) => {
-    const t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-  if (!t) return;
-  const btn = t.closest("button, .btn, .option, .answer, .choice");
+      card.style.transform = `translateZ(0) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    };
+
+    document.addEventListener("pointermove", (e) => {
+      const el = getEl(e);
+      if (!el) return;
+      const card = el.closest && el.closest(".card");
+      if (!card) return;
+
+      last = { card, x: e.clientX, y: e.clientY };
+      if (!raf) raf = requestAnimationFrame(apply);
+    }, { passive: true });
+
+    document.addEventListener("pointerleave", (e) => {
+      const el = getEl(e);
+      if (!el) return;
+      const card = el.closest && el.closest(".card");
+      if (!card) return;
+      card.style.transform = "";
+    }, true);
+  }
+
+  // Ripple on click for buttons/options
+  document.addEventListener("pointerdown", (e) => {
+    const el = getEl(e);
+    if (!el) return;
+
+    const btn = el.closest && el.closest(".btn, .optBtn, .choice, .option");
     if (!btn) return;
 
-    // avoid rippling sliders or volume track if they are buttons (rare)
-    if (btn.closest('input[type="range"]')) return;
+    // Avoid ripples on disabled
+    if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
 
     const r = btn.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
 
-    const s = document.createElement("span");
-    s.className = "ripple";
-    s.style.left = x + "px";
-    s.style.top  = y + "px";
-    btn.appendChild(s);
-    setTimeout(() => s.remove(), 600);
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.left = x + "px";
+    ripple.style.top = y + "px";
+    btn.appendChild(ripple);
+
+    setTimeout(() => ripple.remove(), 650);
   }, { passive: true });
-
-  // 3) Cursor glow positions for buttons AND cards
-  document.addEventListener("pointermove", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const el = t.closest("button, .btn, .option, .answer, .choice, .card, .panel, .box, .section");
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100;
-    const my = ((e.clientY - r.top) / r.height) * 100;
-    el.style.setProperty("--mx", mx + "%");
-    el.style.setProperty("--my", my + "%");
-  }, { passive: true });
-
-  // 4) Gentle 3D parallax for cards
-  const tilt = (card, e) => {
-    const r = card.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;  // 0..1
-    const py = (e.clientY - r.top) / r.height; // 0..1
-    const rx = (0.5 - py) * 6; // deg
-    const ry = (px - 0.5) * 8; // deg
-    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0)`;
-  };
-
-  document.addEventListener("pointermove", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const card = t.closest(".card, .panel, .box, .section");
-    if (!card) return;
-    tilt(card, e);
-  }, { passive: true });
-
-  document.addEventListener("pointerleave", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const card = t.closest(".card, .panel, .box, .section");
-    if (!card) return;
-    card.style.transform = "";
-  }, true);
-
-})();
-(function WOW_AUTO(){
-  const app = document.getElementById("app");
-// ===== Screen transitions (fade + slide) =====
-const _prefersReducedMotion = (() => {
-  try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-  catch (_) { return false; }
 })();
 
-let _activeLayer = null;
-let _isTransitioning = false;
 
-function mountScreen(html, { animate = true } = {}) {
-  const layer = document.createElement("div");
-  layer.className = "screenLayer";
-  layer.innerHTML = html;
-
-  if (!_activeLayer) {
-    app.innerHTML = "";
-    app.appendChild(layer);
-    _activeLayer = layer;
-    return;
-  }
-
-  if (!animate || _prefersReducedMotion) {
-    app.replaceChild(layer, _activeLayer);
-    _activeLayer = layer;
-    return;
-  }
-
-  if (_isTransitioning) {
-    app.replaceChild(layer, _activeLayer);
-    _activeLayer = layer;
-    return;
-  }
-
-  _isTransitioning = true;
-
-  const prev = _activeLayer;
-  const prevH = prev.getBoundingClientRect().height;
-  app.style.height = Math.max(1, Math.round(prevH)) + "px";
-  app.style.position = "relative";
-
-  layer.classList.add("is-enter");
-  prev.classList.add("is-exit");
-
-  app.appendChild(layer);
-
-  requestAnimationFrame(() => {
-    layer.classList.add("is-enter-active");
-    prev.classList.add("is-exit-active");
-  });
-
-  const done = () => {
-    try { prev.remove(); } catch (_) {}
-    layer.classList.remove("is-enter", "is-enter-active");
-    app.style.height = "";
-    _activeLayer = layer;
-    _isTransitioning = false;
-  };
-
-  const t = setTimeout(done, 650);
-  layer.addEventListener("transitionend", () => {
-    clearTimeout(t);
-    done();
-  }, { once: true });
-}
-
-  if (!app) return;
-
-  // 1) Wrap each render into .screen for fade+slide
-  const ensureScreen = () => {
-    const first = app.firstElementChild;
-    if (first && first.classList.contains("screen")) return;
-    const wrap = document.createElement("div");
-    wrap.className = "screen";
-    while (app.firstChild) wrap.appendChild(app.firstChild);
-    app.appendChild(wrap);
-  };
-  ensureScreen();
-
-  let raf = 0;
-  new MutationObserver(() => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(ensureScreen);
-  }).observe(app, { childList: true });
-
-  // 2) Cursor glow ONLY for answer buttons and cards (NOT for range sliders)
-  document.addEventListener("pointermove", (e) => {
-    const tgt = _evtTargetEl(e); if (!tgt) return;
-    if (tgt.closest('input[type="range"]')) return;
-
-    const node = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-    if (!node) return;
-    const el = node.closest(".optBtn, .btn, .card, .panel, .box, .section");
-    if (!el) return;
-
-    const r = el.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100;
-    const my = ((e.clientY - r.top) / r.height) * 100;
-    el.style.setProperty("--mx", mx + "%");
-    el.style.setProperty("--my", my + "%");
-  }, { passive: true });
-
-  // 3) Ripple on click for answer buttons + normal buttons (NOT sliders)
-  document.addEventListener("click", (e) => {
-    const tgt = _evtTargetEl(e); if (!tgt) return;
-    if (tgt.closest('input[type="range"]')) return;
-
-    const node = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-    if (!node) return;
-    const btn = node.closest(".optBtn, button.btn, button");
-    if (!btn) return;
-
-    const r = btn.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-
-    const s = document.createElement("span");
-    s.className = "ripple";
-    s.style.left = x + "px";
-    s.style.top  = y + "px";
-    btn.appendChild(s);
-    setTimeout(() => s.remove(), 650);
-  }, { passive: true });
-
-  // 4) Gentle tilt ONLY for cards (avoid messing with layout)
-  const tilt = (card, e) => {
-    const r = card.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top) / r.height;
-    const rx = (0.5 - py) * 6;
-    const ry = (px - 0.5) * 8;
-    card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-  };
-
-  document.addEventListener("pointermove", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const card = t.closest(".card, .panel, .box, .section");
-    if (!card) return;
-    tilt(card, e);
-  }, { passive: true });
-
-  document.addEventListener("pointerleave", (e) => {
-    const t = _evtTargetEl(e); if (!t) return;
-    const card = t.closest(".card, .panel, .box, .section");
-    if (!card) return;
-    card.style.transform = "";
-  }, true);
-})();
 function renderVideoLevel(level, shownLevelNum) {
   const TOTAL_LEVELS = window.QUIZ_DATA.levels.length;
 
@@ -903,9 +689,7 @@ function renderVideoLevel(level, shownLevelNum) {
 
   // Клики по вариантам
   optsBox.addEventListener("click", async (e) => {
-    const t = (e.target && e.target.nodeType === 1) ? e.target : (e.target && e.target.parentElement);
-    if (!t) return;
-    const btn = t.closest(".optBtn");
+    const btn = e.target.closest(".optBtn");
     if (!btn) return;
 
     const idx = Number(btn.dataset.idx);
